@@ -57,7 +57,7 @@
             @endphp
             <div class="status-box info-box" style="text-align: center;">
                 <p style="color: #9e9eb8; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px;">Perubahan Status</p>
-                <span class="old-status">{{ $statusLabels[$oldStatus] ?? ucfirst($oldStatus) }}</span>
+                <span class="old-status">{{ isset($statusLabels[$oldStatus]) ? $statusLabels[$oldStatus] : ucfirst($oldStatus) }}</span>
                 <span class="status-arrow">→</span>
                 <span class="new-status status-{{ $order->status }}">{{ $order->status_label }}</span>
             </div>
