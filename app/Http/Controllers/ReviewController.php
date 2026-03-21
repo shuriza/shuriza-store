@@ -23,6 +23,11 @@ class ReviewController extends Controller implements HasMiddleware
      */
     public function store(Request $request, Product $product)
     {
+        // Pastikan produk aktif
+        if (!$product->is_active) {
+            abort(404, 'Produk tidak ditemukan.');
+        }
+
         $request->validate([
             'rating'  => 'required|integer|min:1|max:5',
             'comment' => 'nullable|string|max:1000',

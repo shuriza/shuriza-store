@@ -175,6 +175,11 @@ class OrderController extends Controller
             $this->clearCart();
             session()->forget('coupon_code');
 
+            // Simpan order number ke session untuk authorization guest
+            $recentOrders = session('recent_order_numbers', []);
+            $recentOrders[] = $order->order_number;
+            session(['recent_order_numbers' => array_slice($recentOrders, -5)]); // Keep last 5
+
             DB::commit();
 
             // Kirim email konfirmasi order (non-blocking)
@@ -208,6 +213,9 @@ class OrderController extends Controller
             ->where('order_number', $orderNumber)
             ->firstOrFail();
 
+        // Authorization: pastikan order milik user yang valid
+        $this->authorizeOrderAccess($order);
+
         // Tandai waktu WhatsApp dikirim
         if (! $order->whatsapp_sent_at) {
             $order->update(['whatsapp_sent_at' => now()]);
@@ -225,7 +233,38 @@ class OrderController extends Controller
             ->where('order_number', $orderNumber)
             ->firstOrFail();
 
+        // Authorization: pastikan order milik user yang valid
+        $this->authorizeOrderAccess($order);
+
         return redirect($order->getWhatsAppUrl());
+    }
+
+    /**
+     * Authorize access to order for success/whatsapp pages.
+     * Allows: order owner, guest who just created it (via session), or admin.
+     */
+    private function authorizeOrderAccess(Order $order): void
+    {
+        // Admin selalu bisa akses
+        if (Auth::check() && Auth::user()->isAdmin()) {
+            return;
+        }
+
+        // Jika order milik user yang login
+        if ($order->user_id && Auth::check() && $order->user_id === Auth::id()) {
+            return;
+        }
+
+        // Jika guest order, cek session (order baru dibuat dalam 30 menit terakhir dalam session yang sama)
+        if (!$order->user_id) {
+            $recentOrderNumbers = session('recent_order_numbers', []);
+            if (in_array($order->order_number, $recentOrderNumbers)) {
+                return;
+            }
+        }
+
+        // Tidak authorized
+        abort(403, 'Anda tidak memiliki akses ke order ini.');
     }
 
     /**

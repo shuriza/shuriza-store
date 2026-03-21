@@ -20,10 +20,8 @@ class PaymentController extends Controller
             ->where('status', 'pending')
             ->firstOrFail();
 
-        // Pastikan order milik user atau guest
-        if (auth()->check() && $order->user_id && $order->user_id !== auth()->id()) {
-            abort(403);
-        }
+        // Authorization: order harus milik user yang valid
+        $this->authorizePaymentAccess($order);
 
         if (!PaymentService::isEnabled()) {
             return redirect()->route('order.success', $order->order_number)
@@ -56,6 +54,9 @@ class PaymentController extends Controller
     {
         $order = Order::where('order_number', $orderNumber)->firstOrFail();
 
+        // Authorization: order harus milik user yang valid
+        $this->authorizePaymentAccess($order);
+
         // Cek apakah sudah dibayar
         $order->refresh();
 
@@ -66,6 +67,34 @@ class PaymentController extends Controller
 
         return redirect()->route('order.success', $order->order_number)
             ->with('info', 'Pembayaran sedang diproses. Status akan diupdate otomatis.');
+    }
+
+    /**
+     * Authorize payment access for an order.
+     * Allows: order owner, guest who just created it (via session), or admin.
+     */
+    private function authorizePaymentAccess(Order $order): void
+    {
+        // Admin selalu bisa akses
+        if (auth()->check() && auth()->user()->isAdmin()) {
+            return;
+        }
+
+        // Jika order milik user yang login
+        if ($order->user_id && auth()->check() && $order->user_id === auth()->id()) {
+            return;
+        }
+
+        // Jika guest order, cek session
+        if (!$order->user_id) {
+            $recentOrderNumbers = session('recent_order_numbers', []);
+            if (in_array($order->order_number, $recentOrderNumbers)) {
+                return;
+            }
+        }
+
+        // Tidak authorized
+        abort(403, 'Anda tidak memiliki akses untuk membayar order ini.');
     }
 
     /**

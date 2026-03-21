@@ -11,6 +11,11 @@ class ReportController extends Controller
 {
     public function index(Request $request)
     {
+        $request->validate([
+            'date_from' => 'nullable|date',
+            'date_to'   => 'nullable|date|after_or_equal:date_from',
+        ]);
+
         $dateFrom = $request->input('date_from', now()->startOfMonth()->toDateString());
         $dateTo   = $request->input('date_to', now()->toDateString());
 
@@ -64,8 +69,20 @@ class ReportController extends Controller
 
     public function export(Request $request)
     {
+        $request->validate([
+            'date_from' => 'nullable|date',
+            'date_to'   => 'nullable|date|after_or_equal:date_from',
+        ]);
+
         $dateFrom = $request->input('date_from', now()->startOfMonth()->toDateString());
         $dateTo   = $request->input('date_to', now()->toDateString());
+
+        // Limit date range to prevent memory exhaustion (max 1 year)
+        $fromDate = \Carbon\Carbon::parse($dateFrom);
+        $toDate = \Carbon\Carbon::parse($dateTo);
+        if ($fromDate->diffInDays($toDate) > 365) {
+            return back()->with('error', 'Rentang tanggal maksimal 1 tahun.');
+        }
 
         $orders = Order::with('items')
             ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])

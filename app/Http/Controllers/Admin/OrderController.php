@@ -296,6 +296,11 @@ class OrderController extends Controller
      */
     public function deliverItem(Request $request, Order $order, \App\Models\OrderItem $item)
     {
+        // Validate item belongs to this order
+        if ($item->order_id !== $order->id) {
+            abort(404, 'Item tidak ditemukan dalam order ini.');
+        }
+
         $request->validate([
             'delivery_type' => 'required|in:account,link,code,other',
             'delivery_data' => 'required|string|max:2000',

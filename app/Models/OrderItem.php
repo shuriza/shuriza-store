@@ -20,8 +20,8 @@ class OrderItem extends Model
     ];
 
     protected $casts = [
-        'price'        => 'decimal:2',
-        'subtotal'     => 'decimal:2',
+        'price'        => 'integer',
+        'subtotal'     => 'integer',
         'quantity'     => 'integer',
         'delivered_at' => 'datetime',
     ];

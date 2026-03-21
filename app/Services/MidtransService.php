@@ -142,9 +142,9 @@ class MidtransService
         $transactionStatus = $payload['transaction_status'] ?? null;
         $fraudStatus = $payload['fraud_status'] ?? 'accept';
 
-        // Verify signature
+        // Verify signature (use hash_equals for timing-attack resistance)
         $expectedSignature = hash('sha512', $orderId . $statusCode . $grossAmount . $serverKey);
-        if ($signatureKey !== $expectedSignature) {
+        if (!hash_equals($expectedSignature, $signatureKey ?? '')) {
             Log::warning('Midtrans invalid signature', compact('orderId', 'signatureKey', 'expectedSignature'));
             return ['success' => false, 'message' => 'Invalid signature'];
         }
