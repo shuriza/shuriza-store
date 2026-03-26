@@ -23,19 +23,22 @@ class CouponController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'code'         => 'required|string|max:50|unique:coupons,code',
-            'name'         => 'required|string|max:100',
-            'type'         => 'required|in:fixed,percent',
-            'value'        => ['required', 'integer', 'min:1', $request->type === 'percent' ? 'max:100' : 'max:999999999'],
-            'min_order'    => 'nullable|integer|min:0',
-            'max_discount' => 'nullable|integer|min:0',
-            'usage_limit'  => 'nullable|integer|min:1',
-            'starts_at'    => 'nullable|date',
-            'expires_at'   => 'nullable|date|after_or_equal:starts_at',
+            'code'            => 'required|string|max:50|unique:coupons,code',
+            'name'            => 'required|string|max:100',
+            'type'            => 'required|in:fixed,percent',
+            'value'           => ['required', 'integer', 'min:1', $request->type === 'percent' ? 'max:100' : 'max:999999999'],
+            'min_order'       => 'nullable|integer|min:0',
+            'max_discount'    => 'nullable|integer|min:0',
+            'usage_limit'     => 'nullable|integer|min:1',
+            'usage_per_user'  => 'nullable|integer|min:1',
+            'first_order_only' => 'boolean',
+            'starts_at'       => 'nullable|date',
+            'expires_at'      => 'nullable|date|after_or_equal:starts_at',
         ]);
 
         $validated['code'] = Str::upper($validated['code']);
         $validated['min_order'] = $validated['min_order'] ?? 0;
+        $validated['first_order_only'] = $request->boolean('first_order_only');
         $validated['is_active'] = true;
 
         Coupon::create($validated);
@@ -51,19 +54,22 @@ class CouponController extends Controller
     public function update(Request $request, Coupon $coupon)
     {
         $validated = $request->validate([
-            'code'         => 'required|string|max:50|unique:coupons,code,' . $coupon->id,
-            'name'         => 'required|string|max:100',
-            'type'         => 'required|in:fixed,percent',
-            'value'        => ['required', 'integer', 'min:1', $request->type === 'percent' ? 'max:100' : 'max:999999999'],
-            'min_order'    => 'nullable|integer|min:0',
-            'max_discount' => 'nullable|integer|min:0',
-            'usage_limit'  => 'nullable|integer|min:1',
-            'starts_at'    => 'nullable|date',
-            'expires_at'   => 'nullable|date|after_or_equal:starts_at',
+            'code'            => 'required|string|max:50|unique:coupons,code,' . $coupon->id,
+            'name'            => 'required|string|max:100',
+            'type'            => 'required|in:fixed,percent',
+            'value'           => ['required', 'integer', 'min:1', $request->type === 'percent' ? 'max:100' : 'max:999999999'],
+            'min_order'       => 'nullable|integer|min:0',
+            'max_discount'    => 'nullable|integer|min:0',
+            'usage_limit'     => 'nullable|integer|min:1',
+            'usage_per_user'  => 'nullable|integer|min:1',
+            'first_order_only' => 'boolean',
+            'starts_at'       => 'nullable|date',
+            'expires_at'      => 'nullable|date|after_or_equal:starts_at',
         ]);
 
         $validated['code'] = Str::upper($validated['code']);
         $validated['min_order'] = $validated['min_order'] ?? 0;
+        $validated['first_order_only'] = $request->boolean('first_order_only');
 
         $coupon->update($validated);
 

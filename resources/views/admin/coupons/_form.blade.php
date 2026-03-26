@@ -57,11 +57,33 @@
     </div>
 
     {{-- Usage Limit --}}
-    <div>
-        <label for="usage_limit" class="mb-1.5 block text-sm font-medium text-gray-300">Batas Penggunaan</label>
-        <input type="number" name="usage_limit" id="usage_limit" value="{{ old('usage_limit', $isEdit ? $coupon->usage_limit : '') }}" min="1"
-               placeholder="Kosongkan jika tanpa batas"
-               class="w-full rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-peri focus:outline-none focus:ring-1 focus:ring-peri">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div>
+            <label for="usage_limit" class="mb-1.5 block text-sm font-medium text-gray-300">Batas Penggunaan Total</label>
+            <input type="number" name="usage_limit" id="usage_limit" value="{{ old('usage_limit', $isEdit ? $coupon->usage_limit : '') }}" min="1"
+                   placeholder="Kosongkan jika tanpa batas"
+                   class="w-full rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-peri focus:outline-none focus:ring-1 focus:ring-peri">
+            <p class="mt-1 text-xs text-gray-500">Total pemakaian dari semua user.</p>
+        </div>
+        <div>
+            <label for="usage_per_user" class="mb-1.5 block text-sm font-medium text-gray-300">Batas Penggunaan per User</label>
+            <input type="number" name="usage_per_user" id="usage_per_user" value="{{ old('usage_per_user', $isEdit ? $coupon->usage_per_user : '') }}" min="1"
+                   placeholder="Kosongkan jika tanpa batas"
+                   class="w-full rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-peri focus:outline-none focus:ring-1 focus:ring-peri">
+            <p class="mt-1 text-xs text-gray-500">Berapa kali 1 user dapat memakai kupon ini.</p>
+        </div>
+    </div>
+
+    {{-- First Order Only --}}
+    <div class="flex items-center gap-3 p-4 rounded-xl border border-gray-700 bg-gray-800/50">
+        <input type="hidden" name="first_order_only" value="0">
+        <input type="checkbox" name="first_order_only" id="first_order_only" value="1"
+               {{ old('first_order_only', $isEdit ? $coupon->first_order_only : false) ? 'checked' : '' }}
+               class="w-4 h-4 rounded border-gray-600 bg-gray-700 text-peri focus:ring-peri focus:ring-offset-gray-900">
+        <div>
+            <label for="first_order_only" class="text-sm font-medium text-gray-300 cursor-pointer">Hanya untuk Order Pertama</label>
+            <p class="text-xs text-gray-500 mt-0.5">Kupon hanya berlaku untuk pelanggan yang belum pernah order sebelumnya.</p>
+        </div>
     </div>
 
     {{-- Date Range --}}

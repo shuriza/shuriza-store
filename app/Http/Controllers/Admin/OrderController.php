@@ -323,4 +323,36 @@ class OrderController extends Controller
 
         return back()->with('success', "Data delivery untuk \"{$item->product_name}\" berhasil dikirim.");
     }
+
+    /**
+     * Perbarui data delivery yang sudah pernah dikirim.
+     */
+    public function redeliverItem(Request $request, Order $order, \App\Models\OrderItem $item)
+    {
+        if ($item->order_id !== $order->id) {
+            abort(404, 'Item tidak ditemukan dalam order ini.');
+        }
+
+        $request->validate([
+            'delivery_type' => 'required|in:account,link,code,other',
+            'delivery_data' => 'required|string|max:2000',
+        ]);
+
+        $item->update([
+            'delivery_type' => $request->delivery_type,
+            'delivery_data' => $request->delivery_data,
+            'delivered_at'  => now(),
+        ]);
+
+        // Kirim ulang notifikasi in-app ke customer
+        if ($order->user_id) {
+            try {
+                \App\Models\Notification::digitalDelivery($order, $item);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        return back()->with('success', "Data delivery untuk \"{$item->product_name}\" berhasil diperbarui dan dikirim ulang.");
+    }
 }

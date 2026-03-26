@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\CartItem;
 use App\Models\Coupon;
+use App\Models\CouponUsage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -33,7 +34,7 @@ class OrderController extends Controller
 
         if ($couponCode) {
             $coupon = Coupon::where('code', $couponCode)->first();
-            if ($coupon && $coupon->isValid($subtotal)) {
+            if ($coupon && $coupon->isValid($subtotal, Auth::id())) {
                 $discount = $coupon->calculateDiscount($subtotal);
             } else {
                 session()->forget('coupon_code');
@@ -61,8 +62,11 @@ class OrderController extends Controller
 
         $cartItems = $this->getCartItems();
         $subtotal = $cartItems->sum(fn($item) => $item->quantity * $item->product->effective_price);
+        $userId = Auth::id();
+        $userEmail = $request->user()?->email;
+        $isFirstOrder = $this->isFirstOrder($userId, $userEmail);
 
-        if (!$coupon->isValid($subtotal)) {
+        if (!$coupon->isValid($subtotal, $userId, $userEmail, $isFirstOrder)) {
             $message = 'Kupon tidak valid.';
             if ($coupon->min_order > $subtotal) {
                 $message = 'Minimum order Rp ' . number_format($coupon->min_order, 0, ',', '.') . ' untuk menggunakan kupon ini.';
@@ -70,6 +74,10 @@ class OrderController extends Controller
                 $message = 'Kupon sudah kedaluwarsa.';
             } elseif ($coupon->usage_limit && $coupon->used_count >= $coupon->usage_limit) {
                 $message = 'Kupon sudah habis digunakan.';
+            } elseif ($coupon->first_order_only && !$isFirstOrder) {
+                $message = 'Kupon ini hanya berlaku untuk order pertama.';
+            } elseif ($coupon->usage_per_user && $coupon->getUserUsageCount($userId, $userEmail) >= $coupon->usage_per_user) {
+                $message = 'Kamu sudah mencapai batas penggunaan kupon ini.';
             }
             return back()->with('error', $message);
         }
@@ -133,11 +141,16 @@ class OrderController extends Controller
             // Apply coupon
             $couponCode = session('coupon_code');
             $discount = 0;
+            $couponId = null;
             if ($couponCode) {
                 $coupon = Coupon::where('code', $couponCode)->first();
-                if ($coupon && $coupon->isValid($subtotal)) {
+                $userId = Auth::id();
+                $userEmail = $request->email;
+                $isFirstOrder = $this->isFirstOrder($userId, $userEmail);
+                if ($coupon && $coupon->isValid($subtotal, $userId, $userEmail, $isFirstOrder)) {
                     $discount = $coupon->calculateDiscount($subtotal);
                     $coupon->increment('used_count');
+                    $couponId = $coupon->id;
                 }
             }
             $total = $subtotal - $discount;
@@ -169,6 +182,16 @@ class OrderController extends Controller
 
                 // Kurangi stok
                 $item->product->decrement('stock', $item->quantity);
+            }
+
+            // Catat penggunaan kupon per user
+            if ($couponId && $discount > 0) {
+                CouponUsage::create([
+                    'coupon_id'  => $couponId,
+                    'order_id'   => $order->id,
+                    'user_id'    => Auth::id(),
+                    'user_email' => $request->email,
+                ]);
             }
 
             // Hapus cart & coupon session
@@ -309,6 +332,22 @@ class OrderController extends Controller
     // ─────────────────────────────────────────────────────────────────────────
     // Private Helpers
     // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Determine if this would be the customer's first order.
+     */
+    private function isFirstOrder(?int $userId, ?string $userEmail): bool
+    {
+        if ($userId) {
+            return !Order::notCancelled()->where('user_id', $userId)->exists();
+        }
+
+        if ($userEmail) {
+            return !Order::notCancelled()->where('email', $userEmail)->exists();
+        }
+
+        return true;
+    }
 
     private function getCartItems()
     {
