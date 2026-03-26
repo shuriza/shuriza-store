@@ -108,5 +108,19 @@
         });
     });
 </script>
+@elseif($provider === 'xendit' && $order->payment_url)
+<script>
+    document.getElementById('pay-button').addEventListener('click', function () {
+        this.disabled = true;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengalihkan...';
+        window.location.href = '{{ $order->payment_url }}';
+    });
+</script>
+@else
+<script>
+    document.getElementById('pay-button').addEventListener('click', function () {
+        alert('Metode pembayaran belum siap. Silakan coba lagi atau pilih pembayaran manual via WhatsApp.');
+    });
+</script>
 @endif
 @endpush

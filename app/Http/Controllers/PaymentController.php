@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\PaymentWebhookEvent;
 use App\Services\PaymentService;
 use App\Services\MidtransService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class PaymentController extends Controller
@@ -75,13 +77,15 @@ class PaymentController extends Controller
      */
     private function authorizePaymentAccess(Order $order): void
     {
+        $authUser = Auth::user();
+
         // Admin selalu bisa akses
-        if (auth()->check() && auth()->user()->isAdmin()) {
+        if ($authUser instanceof \App\Models\User && $authUser->isAdmin()) {
             return;
         }
 
         // Jika order milik user yang login
-        if ($order->user_id && auth()->check() && $order->user_id === auth()->id()) {
+        if ($order->user_id && Auth::check() && $order->user_id === Auth::id()) {
             return;
         }
 
@@ -103,11 +107,84 @@ class PaymentController extends Controller
     public function notification(Request $request)
     {
         $payload = $request->all();
+        $headers = $request->headers->all();
+        $provider = PaymentService::getProvider();
+        $identity = PaymentService::resolveNotificationIdentity($provider, $payload, $headers);
 
-        Log::info('Payment notification received', $payload);
+        $webhookEvent = $this->captureWebhookEvent($provider, $identity, $payload, $headers);
 
-        $result = PaymentService::handleNotification($payload);
+        if ($webhookEvent && $webhookEvent->status === 'processed') {
+            return response()->json(['status' => 'ok', 'duplicate' => true]);
+        }
 
-        return response()->json(['status' => $result['success'] ? 'ok' : 'error']);
+        Log::info('Payment notification received', [
+            'provider' => $provider,
+            'payload_keys' => array_keys($payload),
+            'event_id' => $identity['event_id'],
+        ]);
+
+        $result = PaymentService::handleNotification($payload, $headers);
+
+        if (!$result['success']) {
+            if ($webhookEvent) {
+                $webhookEvent->update([
+                    'status' => 'failed',
+                    'processed_at' => now(),
+                    'error_message' => (string) ($result['message'] ?? 'Notification rejected'),
+                    'response_code' => 400,
+                ]);
+            }
+
+            return response()->json([
+                'status' => 'error',
+                'message' => $result['message'] ?? 'Notification rejected',
+            ], 400);
+        }
+
+        if ($webhookEvent) {
+            $webhookEvent->update([
+                'status' => 'processed',
+                'processed_at' => now(),
+                'error_message' => null,
+                'response_code' => 200,
+            ]);
+        }
+
+        return response()->json(['status' => 'ok']);
+    }
+
+    private function captureWebhookEvent(string $provider, array $identity, array $payload, array $headers): ?PaymentWebhookEvent
+    {
+        $eventId = $identity['event_id'] ?? null;
+
+        if ($eventId) {
+            $existing = PaymentWebhookEvent::where('provider', $provider)
+                ->where('event_id', $eventId)
+                ->first();
+
+            if ($existing) {
+                $existing->increment('attempts');
+                $existing->update([
+                    'payload' => $payload,
+                    'headers' => $headers,
+                    'payload_hash' => hash('sha256', json_encode($payload)),
+                    'order_number' => $identity['order_number'] ?? $existing->order_number,
+                ]);
+
+                return $existing->fresh();
+            }
+        }
+
+        return PaymentWebhookEvent::create([
+            'provider' => $provider,
+            'event_id' => $eventId,
+            'order_number' => $identity['order_number'] ?? null,
+            'endpoint' => 'payment.notification',
+            'payload' => $payload,
+            'headers' => $headers,
+            'payload_hash' => hash('sha256', json_encode($payload)),
+            'status' => 'received',
+            'attempts' => 1,
+        ]);
     }
 }

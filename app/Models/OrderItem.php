@@ -17,6 +17,10 @@ class OrderItem extends Model
         'delivery_data',
         'delivery_type',
         'delivered_at',
+        'delivery_status',
+        'delivery_attempts',
+        'last_delivery_error',
+        'delivery_meta',
     ];
 
     protected $casts = [
@@ -24,6 +28,8 @@ class OrderItem extends Model
         'subtotal'     => 'integer',
         'quantity'     => 'integer',
         'delivered_at' => 'datetime',
+        'delivery_attempts' => 'integer',
+        'delivery_meta' => 'array',
     ];
 
     /*

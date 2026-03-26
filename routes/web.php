@@ -408,6 +408,7 @@ Route::prefix("admin")
 
         // Digital Delivery
         Route::post("/orders/{order}/items/{item}/deliver", [AdminOrderController::class, "deliverItem"])->name("orders.deliver-item");
+        Route::post("/orders/{order}/items/{item}/retry-delivery", [AdminOrderController::class, "retryDelivery"])->name("orders.retry-delivery");
     });
 
 /*

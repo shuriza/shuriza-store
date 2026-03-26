@@ -95,15 +95,27 @@
                                         <select name="{{ $setting['key'] }}" id="{{ $setting['key'] }}"
                                                 class="w-full rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 text-sm text-white focus:border-peri focus:outline-none focus:ring-1 focus:ring-peri">
                                             <option value="midtrans" {{ $setting['value'] === 'midtrans' ? 'selected' : '' }}>🏦 Midtrans (QRIS, E-Wallet, Bank Transfer)</option>
-                                            <option value="xendit" {{ $setting['value'] === 'xendit' ? 'selected' : '' }}>💳 Xendit (Segera Hadir)</option>
+                                            <option value="xendit" {{ $setting['value'] === 'xendit' ? 'selected' : '' }}>💳 Xendit (Invoice, Virtual Account, E-Wallet)</option>
                                         </select>
-                                        <p class="mt-1 text-xs text-gray-500">Pilih provider pembayaran. Xendit akan tersedia di update mendatang.</p>
+                                        <p class="mt-1 text-xs text-gray-500">Pilih provider pembayaran aktif untuk checkout otomatis.</p>
                                     @elseif($setting['key'] === 'midtrans_server_key')
                                         <input type="password" name="{{ $setting['key'] }}" id="{{ $setting['key'] }}"
                                                value="{{ old($setting['key'], $setting['value']) }}"
                                                placeholder="Mid-server-xxxx"
                                                class="w-full rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-peri focus:outline-none focus:ring-1 focus:ring-peri">
                                         <p class="mt-1 text-xs text-red-400"><i class="fas fa-lock mr-1"></i>Server Key bersifat rahasia. Jangan bagikan ke siapapun.</p>
+                                    @elseif($setting['key'] === 'xendit_secret_key')
+                                        <input type="password" name="{{ $setting['key'] }}" id="{{ $setting['key'] }}"
+                                               value="{{ old($setting['key'], $setting['value']) }}"
+                                               placeholder="xnd_development_..."
+                                               class="w-full rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-peri focus:outline-none focus:ring-1 focus:ring-peri">
+                                        <p class="mt-1 text-xs text-red-400"><i class="fas fa-lock mr-1"></i>Secret Key bersifat rahasia. Simpan hanya di panel admin.</p>
+                                    @elseif($setting['key'] === 'xendit_callback_token')
+                                        <input type="password" name="{{ $setting['key'] }}" id="{{ $setting['key'] }}"
+                                               value="{{ old($setting['key'], $setting['value']) }}"
+                                               placeholder="callback-token-aman"
+                                               class="w-full rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-peri focus:outline-none focus:ring-1 focus:ring-peri">
+                                        <p class="mt-1 text-xs text-gray-500">Samakan dengan callback verification token di dashboard Xendit.</p>
                                     @else
                                         <input type="{{ $setting['key'] === 'store_email' ? 'email' : 'text' }}"
                                                name="{{ $setting['key'] }}" id="{{ $setting['key'] }}"
@@ -129,6 +141,8 @@
                                         <p class="mt-1 text-xs text-gray-500">Dapatkan di dashboard.midtrans.com → Settings → Access Keys</p>
                                     @elseif($setting['key'] === 'midtrans_client_key')
                                         <p class="mt-1 text-xs text-gray-500">Client key untuk integrasi frontend (Snap.js)</p>
+                                    @elseif($setting['key'] === 'xendit_secret_key')
+                                        <p class="mt-1 text-xs text-gray-500">Dapatkan dari dashboard Xendit pada API Keys</p>
                                     @endif
                                 @endif
                             </div>

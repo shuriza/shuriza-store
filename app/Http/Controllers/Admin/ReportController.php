@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\CouponUsage;
 use Illuminate\Http\Request;
 
 class ReportController extends Controller
@@ -62,8 +63,59 @@ class ReportController extends Controller
             ->get()
             ->keyBy('status');
 
+        $totalCheckout = (int) ($revenue->total_orders ?? 0);
+        $paidOrders = Order::whereIn('status', ['processing', 'completed'])
+            ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->count();
+        $completedOrders = (int) ($statusBreakdown->get('completed')->count ?? 0);
+        $couponOrders = Order::whereNotNull('coupon_code')
+            ->where('status', '!=', 'cancelled')
+            ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->count();
+
+        $checkoutFunnel = [
+            'checkout_created' => $totalCheckout,
+            'paid' => $paidOrders,
+            'completed' => $completedOrders,
+        ];
+
+        $repeatBuyerStats = Order::where('status', '!=', 'cancelled')
+            ->whereNotNull('user_id')
+            ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->selectRaw('user_id, COUNT(*) as order_count, SUM(total) as revenue')
+            ->groupBy('user_id')
+            ->havingRaw('COUNT(*) >= 2')
+            ->get();
+
+        $repeatBuyers = [
+            'customers' => $repeatBuyerStats->count(),
+            'orders' => (int) $repeatBuyerStats->sum('order_count'),
+            'revenue' => (int) $repeatBuyerStats->sum('revenue'),
+        ];
+
+        $couponUsageCount = CouponUsage::whereBetween('used_at', [$dateFrom, $dateTo . ' 23:59:59'])->count();
+        $couponRevenue = Order::whereNotNull('coupon_code')
+            ->where('status', '!=', 'cancelled')
+            ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->sum('total');
+
+        $couponConversion = [
+            'orders_with_coupon' => $couponOrders,
+            'usage_events' => $couponUsageCount,
+            'conversion_rate' => $totalCheckout > 0 ? round(($couponOrders / $totalCheckout) * 100, 2) : 0,
+            'coupon_revenue' => (int) $couponRevenue,
+        ];
+
         return view('admin.reports-index', compact(
-            'dateFrom', 'dateTo', 'revenue', 'dailyRevenue', 'topProducts', 'statusBreakdown'
+            'dateFrom',
+            'dateTo',
+            'revenue',
+            'dailyRevenue',
+            'topProducts',
+            'statusBreakdown',
+            'checkoutFunnel',
+            'repeatBuyers',
+            'couponConversion'
         ));
     }
 

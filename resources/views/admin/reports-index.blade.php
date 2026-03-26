@@ -97,6 +97,41 @@
         </div>
     </div>
 
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div class="rounded-2xl border border-gray-800 bg-gray-900 p-5">
+            <h3 class="text-sm font-bold text-white mb-4"><i class="fas fa-filter text-peri mr-2"></i>Checkout Funnel</h3>
+            @php
+                $checkoutCreated = max(1, $checkoutFunnel['checkout_created'] ?? 0);
+                $paidRate = round((($checkoutFunnel['paid'] ?? 0) / $checkoutCreated) * 100, 1);
+                $completedRate = round((($checkoutFunnel['completed'] ?? 0) / $checkoutCreated) * 100, 1);
+            @endphp
+            <div class="space-y-3 text-sm">
+                <div class="flex items-center justify-between text-gray-300"><span>Checkout dibuat</span><span class="font-bold text-white">{{ number_format($checkoutFunnel['checkout_created'] ?? 0) }}</span></div>
+                <div class="flex items-center justify-between text-gray-300"><span>Sudah bayar</span><span class="font-bold text-blue-400">{{ number_format($checkoutFunnel['paid'] ?? 0) }} ({{ $paidRate }}%)</span></div>
+                <div class="flex items-center justify-between text-gray-300"><span>Selesai</span><span class="font-bold text-green-400">{{ number_format($checkoutFunnel['completed'] ?? 0) }} ({{ $completedRate }}%)</span></div>
+            </div>
+        </div>
+
+        <div class="rounded-2xl border border-gray-800 bg-gray-900 p-5">
+            <h3 class="text-sm font-bold text-white mb-4"><i class="fas fa-users text-peri mr-2"></i>Repeat Buyers</h3>
+            <div class="space-y-3 text-sm">
+                <div class="flex items-center justify-between text-gray-300"><span>Pelanggan repeat</span><span class="font-bold text-white">{{ number_format($repeatBuyers['customers'] ?? 0) }}</span></div>
+                <div class="flex items-center justify-between text-gray-300"><span>Total order repeat</span><span class="font-bold text-blue-400">{{ number_format($repeatBuyers['orders'] ?? 0) }}</span></div>
+                <div class="flex items-center justify-between text-gray-300"><span>Revenue repeat</span><span class="font-bold text-green-400">Rp {{ number_format($repeatBuyers['revenue'] ?? 0, 0, ',', '.') }}</span></div>
+            </div>
+        </div>
+
+        <div class="rounded-2xl border border-gray-800 bg-gray-900 p-5">
+            <h3 class="text-sm font-bold text-white mb-4"><i class="fas fa-ticket-alt text-peri mr-2"></i>Coupon Conversion</h3>
+            <div class="space-y-3 text-sm">
+                <div class="flex items-center justify-between text-gray-300"><span>Order pakai kupon</span><span class="font-bold text-white">{{ number_format($couponConversion['orders_with_coupon'] ?? 0) }}</span></div>
+                <div class="flex items-center justify-between text-gray-300"><span>Event penggunaan</span><span class="font-bold text-blue-400">{{ number_format($couponConversion['usage_events'] ?? 0) }}</span></div>
+                <div class="flex items-center justify-between text-gray-300"><span>Conversion rate</span><span class="font-bold text-amber-400">{{ number_format($couponConversion['conversion_rate'] ?? 0, 2, ',', '.') }}%</span></div>
+                <div class="flex items-center justify-between text-gray-300"><span>Revenue berkupon</span><span class="font-bold text-green-400">Rp {{ number_format($couponConversion['coupon_revenue'] ?? 0, 0, ',', '.') }}</span></div>
+            </div>
+        </div>
+    </div>
+
     {{-- Top Products --}}
     <div class="rounded-2xl border border-gray-800 bg-gray-900 overflow-hidden">
         <div class="px-5 py-4 border-b border-gray-800">

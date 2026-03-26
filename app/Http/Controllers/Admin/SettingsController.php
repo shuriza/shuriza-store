@@ -129,6 +129,8 @@ class SettingsController extends Controller
             ['group' => 'payment', 'key' => 'midtrans_client_key',       'value' => '',          'type' => 'text',    'label' => 'Midtrans Client Key'],
             ['group' => 'payment', 'key' => 'midtrans_server_key',       'value' => '',          'type' => 'text',    'label' => 'Midtrans Server Key'],
             ['group' => 'payment', 'key' => 'midtrans_is_production',    'value' => '0',         'type' => 'boolean', 'label' => 'Mode Production (centang untuk live, kosongkan untuk sandbox)'],
+            ['group' => 'payment', 'key' => 'xendit_secret_key',         'value' => '',          'type' => 'text',    'label' => 'Xendit Secret Key'],
+            ['group' => 'payment', 'key' => 'xendit_callback_token',     'value' => '',          'type' => 'text',    'label' => 'Xendit Callback Token'],
         ];
 
         foreach ($defaults as $default) {

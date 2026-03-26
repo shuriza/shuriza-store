@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\CartItem;
 use App\Models\Coupon;
+use App\Models\CouponUsage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -33,7 +34,7 @@ class OrderController extends Controller
 
         if ($couponCode) {
             $coupon = Coupon::where('code', $couponCode)->first();
-            if ($coupon && $coupon->isValid($subtotal)) {
+            if ($coupon && $coupon->isValid($subtotal, $cartItems, Auth::id())) {
                 $discount = $coupon->calculateDiscount($subtotal);
             } else {
                 session()->forget('coupon_code');
@@ -62,15 +63,8 @@ class OrderController extends Controller
         $cartItems = $this->getCartItems();
         $subtotal = $cartItems->sum(fn($item) => $item->quantity * $item->product->effective_price);
 
-        if (!$coupon->isValid($subtotal)) {
-            $message = 'Kupon tidak valid.';
-            if ($coupon->min_order > $subtotal) {
-                $message = 'Minimum order Rp ' . number_format($coupon->min_order, 0, ',', '.') . ' untuk menggunakan kupon ini.';
-            } elseif ($coupon->expires_at && now()->gt($coupon->expires_at)) {
-                $message = 'Kupon sudah kedaluwarsa.';
-            } elseif ($coupon->usage_limit && $coupon->used_count >= $coupon->usage_limit) {
-                $message = 'Kupon sudah habis digunakan.';
-            }
+        if (!$coupon->isValid($subtotal, $cartItems, Auth::id())) {
+            $message = $coupon->getInvalidReason($subtotal, $cartItems, Auth::id()) ?? 'Kupon tidak valid.';
             return back()->with('error', $message);
         }
 
@@ -135,7 +129,7 @@ class OrderController extends Controller
             $discount = 0;
             if ($couponCode) {
                 $coupon = Coupon::where('code', $couponCode)->first();
-                if ($coupon && $coupon->isValid($subtotal)) {
+                if ($coupon && $coupon->isValid($subtotal, $cartItems, Auth::id())) {
                     $discount = $coupon->calculateDiscount($subtotal);
                     $coupon->increment('used_count');
                 }
@@ -169,6 +163,16 @@ class OrderController extends Controller
 
                 // Kurangi stok
                 $item->product->decrement('stock', $item->quantity);
+            }
+
+            if (isset($coupon) && $coupon && $discount > 0) {
+                CouponUsage::create([
+                    'coupon_id' => $coupon->id,
+                    'order_id' => $order->id,
+                    'user_id' => Auth::id(),
+                    'discount_amount' => $discount,
+                    'used_at' => now(),
+                ]);
             }
 
             // Hapus cart & coupon session

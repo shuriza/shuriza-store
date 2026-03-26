@@ -59,12 +59,18 @@
                                 </td>
                                 <td class="px-4 py-3 text-gray-300">
                                     {{ $coupon->used_count }}{{ $coupon->usage_limit ? '/' . $coupon->usage_limit : '' }}
+                                    @if($coupon->usage_limit_per_user)
+                                        <span class="block text-[11px] text-gray-500">Maks per akun: {{ $coupon->usage_limit_per_user }}</span>
+                                    @endif
                                 </td>
                                 <td class="px-4 py-3 text-xs text-gray-400">
                                     @if($coupon->starts_at || $coupon->expires_at)
                                         {{ $coupon->starts_at?->format('d M Y') ?? '...' }} - {{ $coupon->expires_at?->format('d M Y') ?? '...' }}
                                     @else
                                         <span class="text-gray-500">Tanpa batas</span>
+                                    @endif
+                                    @if($coupon->campaign_name)
+                                        <span class="block text-[11px] text-peri mt-0.5">Campaign: {{ $coupon->campaign_name }}</span>
                                     @endif
                                 </td>
                                 <td class="px-4 py-3">

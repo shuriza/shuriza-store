@@ -20,6 +20,15 @@
         </div>
     </div>
 
+    <div>
+        <label for="campaign_name" class="mb-1.5 block text-sm font-medium text-gray-300">Nama Campaign</label>
+        <input type="text" name="campaign_name" id="campaign_name"
+               value="{{ old('campaign_name', $isEdit ? $coupon->campaign_name : '') }}"
+               placeholder="Contoh: Promo Akhir Bulan"
+               class="w-full rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-peri focus:outline-none focus:ring-1 focus:ring-peri">
+        <p class="mt-1 text-xs text-gray-500">Opsional, untuk mengelompokkan kupon berdasarkan campaign.</p>
+    </div>
+
     {{-- Type & Value --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <div>
@@ -62,6 +71,40 @@
         <input type="number" name="usage_limit" id="usage_limit" value="{{ old('usage_limit', $isEdit ? $coupon->usage_limit : '') }}" min="1"
                placeholder="Kosongkan jika tanpa batas"
                class="w-full rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-peri focus:outline-none focus:ring-1 focus:ring-peri">
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div>
+            <label for="usage_limit_per_user" class="mb-1.5 block text-sm font-medium text-gray-300">Batas per Akun</label>
+            <input type="number" name="usage_limit_per_user" id="usage_limit_per_user"
+                   value="{{ old('usage_limit_per_user', $isEdit ? $coupon->usage_limit_per_user : '') }}" min="1"
+                   placeholder="Kosongkan jika tanpa batas"
+                   class="w-full rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-peri focus:outline-none focus:ring-1 focus:ring-peri">
+        </div>
+        <div>
+            <label for="min_total_items" class="mb-1.5 block text-sm font-medium text-gray-300">Minimal Total Item</label>
+            <input type="number" name="min_total_items" id="min_total_items"
+                   value="{{ old('min_total_items', $isEdit ? $coupon->min_total_items : 1) }}" min="1"
+                   class="w-full rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-peri focus:outline-none focus:ring-1 focus:ring-peri">
+        </div>
+    </div>
+
+    <div>
+        <label for="allowed_category_ids" class="mb-1.5 block text-sm font-medium text-gray-300">Whitelist Kategori</label>
+        <select name="allowed_category_ids[]" id="allowed_category_ids" multiple
+                class="w-full rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 text-sm text-white focus:border-peri focus:outline-none focus:ring-1 focus:ring-peri min-h-[140px]">
+            @php
+                $selectedCategories = collect(old('allowed_category_ids', $isEdit ? ($coupon->allowed_category_ids ?? []) : []))
+                    ->map(fn($id) => (int) $id)
+                    ->all();
+            @endphp
+            @foreach(($categories ?? collect()) as $category)
+                <option value="{{ $category->id }}" {{ in_array((int) $category->id, $selectedCategories, true) ? 'selected' : '' }}>
+                    {{ $category->name }}
+                </option>
+            @endforeach
+        </select>
+        <p class="mt-1 text-xs text-gray-500">Jika dipilih, kupon hanya aktif ketika keranjang mengandung minimal satu produk dari kategori terpilih.</p>
     </div>
 
     {{-- Date Range --}}
