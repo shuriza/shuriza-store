@@ -82,6 +82,9 @@
                                 </td>
                                 <td class="px-4 py-3 text-right">
                                     <div class="flex items-center justify-end gap-1">
+                                        <a href="{{ route('admin.coupons.usages', $coupon) }}" class="rounded-lg p-2 text-gray-400 transition hover:bg-white/5 hover:text-white" title="Riwayat Penggunaan">
+                                            <i class="fas fa-history"></i>
+                                        </a>
                                         <a href="{{ route('admin.coupons.edit', $coupon) }}" class="rounded-lg p-2 text-gray-400 transition hover:bg-white/5 hover:text-white" title="Edit">
                                             <i class="fas fa-edit"></i>
                                         </a>

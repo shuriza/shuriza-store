@@ -66,4 +66,29 @@ class OrderItem extends Model
     {
         return 'Rp ' . number_format($this->subtotal, 0, ',', '.');
     }
+
+    public function getDeliveryStatusLabelAttribute(): string
+    {
+        return match($this->delivery_status) {
+            'delivered' => 'Terkirim',
+            'failed'    => 'Gagal',
+            default     => 'Menunggu',
+        };
+    }
+
+    public function getDeliveryTypeLabelAttribute(): string
+    {
+        return match($this->delivery_type) {
+            'account' => 'Akun',
+            'link'    => 'Link Download',
+            'code'    => 'Kode/Voucher',
+            'other'   => 'Lainnya',
+            default   => '-',
+        };
+    }
+
+    public function needsDelivery(): bool
+    {
+        return $this->delivery_status !== 'delivered';
+    }
 }

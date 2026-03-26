@@ -16,10 +16,19 @@
         <h1 class="text-2xl font-extrabold text-white">Kelola Pesanan</h1>
         <p class="mt-1 text-sm text-gray-400">{{ $orders->total() }} pesanan ditemukan</p>
     </div>
-    <a href="{{ route('admin.orders.export', request()->query()) }}"
-       class="inline-flex items-center gap-2 rounded-xl bg-peri px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-peri-dark">
-        <i class="fas fa-download"></i> Export CSV
-    </a>
+    <div class="flex items-center gap-3">
+        @if($stats['pending_delivery'] > 0)
+        <a href="{{ route('admin.orders.index', ['status' => 'pending_delivery']) }}"
+           class="inline-flex items-center gap-2 rounded-xl bg-amber-500/10 border border-amber-500/30 px-4 py-2.5 text-sm font-semibold text-amber-400 transition hover:bg-amber-500/20">
+            <i class="fas fa-paper-plane"></i> Perlu Dikirim
+            <span class="rounded-full bg-amber-500 px-1.5 py-0.5 text-xs font-bold text-white">{{ $stats['pending_delivery'] }}</span>
+        </a>
+        @endif
+        <a href="{{ route('admin.orders.export', request()->query()) }}"
+           class="inline-flex items-center gap-2 rounded-xl bg-peri px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-peri-dark">
+            <i class="fas fa-download"></i> Export CSV
+        </a>
+    </div>
 </div>
 
 {{-- Filter Bar --}}
@@ -37,15 +46,16 @@
             </div>
 
             {{-- Status --}}
-            <div class="w-44">
+            <div class="w-48">
                 <label class="mb-1 block text-xs font-medium text-gray-400">Status</label>
                 <select name="status"
                         class="w-full rounded-xl border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-white focus:border-peri focus:outline-none focus:ring-1 focus:ring-peri">
                     <option value="">Semua Status</option>
-                    <option value="pending"    {{ request('status') === 'pending'    ? 'selected' : '' }}>Menunggu</option>
-                    <option value="processing" {{ request('status') === 'processing' ? 'selected' : '' }}>Diproses</option>
-                    <option value="completed"  {{ request('status') === 'completed'  ? 'selected' : '' }}>Selesai</option>
-                    <option value="cancelled"  {{ request('status') === 'cancelled'  ? 'selected' : '' }}>Dibatalkan</option>
+                    <option value="pending"           {{ request('status') === 'pending'           ? 'selected' : '' }}>Menunggu</option>
+                    <option value="processing"        {{ request('status') === 'processing'        ? 'selected' : '' }}>Diproses</option>
+                    <option value="completed"         {{ request('status') === 'completed'         ? 'selected' : '' }}>Selesai</option>
+                    <option value="cancelled"         {{ request('status') === 'cancelled'         ? 'selected' : '' }}>Dibatalkan</option>
+                    <option value="pending_delivery"  {{ request('status') === 'pending_delivery'  ? 'selected' : '' }}>⚡ Perlu Dikirim</option>
                 </select>
             </div>
 
@@ -140,6 +150,11 @@
                     <td class="px-4 py-3">
                         <span class="font-mono text-sm font-semibold text-white">{{ $order->order_number }}</span>
                         <p class="mt-0.5 text-xs text-gray-500">{{ $order->items->count() }} produk</p>
+                        @if($order->pending_delivery_count > 0)
+                            <span class="inline-flex items-center gap-1 mt-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-400">
+                                <i class="fas fa-paper-plane text-[8px]"></i> {{ $order->pending_delivery_count }} item belum dikirim
+                            </span>
+                        @endif
                     </td>
 
                     {{-- Customer --}}

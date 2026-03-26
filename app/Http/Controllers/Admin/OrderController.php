@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Mail\OrderStatusUpdated;
 use App\Models\Order;
+use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
@@ -20,7 +21,14 @@ class OrderController extends Controller
 
         // Filter by status
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            if ($request->status === 'pending_delivery') {
+                // Orders that have at least one undelivered item
+                $query->whereHas('items', function ($q) {
+                    $q->where('delivery_status', '!=', 'delivered');
+                })->whereIn('status', ['processing', 'pending']);
+            } else {
+                $query->where('status', $request->status);
+            }
         }
 
         // Search by order number or customer name
@@ -46,12 +54,15 @@ class OrderController extends Controller
 
         // Stats untuk header cards
         $stats = [
-            'total'      => Order::count(),
-            'pending'    => Order::where('status', 'pending')->count(),
-            'processing' => Order::where('status', 'processing')->count(),
-            'completed'  => Order::where('status', 'completed')->count(),
-            'cancelled'  => Order::where('status', 'cancelled')->count(),
-            'revenue'    => Order::where('status', 'completed')->sum('total'),
+            'total'            => Order::count(),
+            'pending'          => Order::where('status', 'pending')->count(),
+            'processing'       => Order::where('status', 'processing')->count(),
+            'completed'        => Order::where('status', 'completed')->count(),
+            'cancelled'        => Order::where('status', 'cancelled')->count(),
+            'revenue'          => Order::where('status', 'completed')->sum('total'),
+            'pending_delivery' => Order::whereIn('status', ['processing', 'pending'])
+                ->whereHas('items', fn ($q) => $q->where('delivery_status', '!=', 'delivered'))
+                ->count(),
         ];
 
         return view('admin.orders.index', compact('orders', 'stats'));

@@ -132,6 +132,78 @@
         </div>
     </div>
 
+    {{-- Payment Method & Delivery Analytics --}}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {{-- Payment Method Breakdown --}}
+        <div class="rounded-2xl border border-gray-800 bg-gray-900 p-5">
+            <h3 class="text-sm font-bold text-white mb-4"><i class="fas fa-credit-card text-peri mr-2"></i>Metode Pembayaran</h3>
+            @if($paymentBreakdown->isEmpty())
+                <p class="text-sm text-gray-500 text-center py-6">Tidak ada data pada periode ini.</p>
+            @else
+            <div class="space-y-3">
+                @php $maxPayCount = $paymentBreakdown->max('count') ?: 1; @endphp
+                @foreach($paymentBreakdown as $pm)
+                @php
+                    $pmLabel = match($pm->method) {
+                        'midtrans' => 'Midtrans',
+                        'xendit'   => 'Xendit',
+                        'manual'   => 'Manual/WA',
+                        default    => ucfirst($pm->method),
+                    };
+                @endphp
+                <div class="space-y-1">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-gray-300 font-medium">{{ $pmLabel }}</span>
+                        <span class="text-gray-400">{{ $pm->count }} order · Rp {{ number_format($pm->revenue, 0, ',', '.') }}</span>
+                    </div>
+                    <div class="h-2 bg-gray-800 rounded-full overflow-hidden">
+                        <div class="h-full bg-peri rounded-full" style="width: {{ ($pm->count / $maxPayCount) * 100 }}%"></div>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+            @endif
+        </div>
+
+        {{-- Delivery Analytics --}}
+        <div class="rounded-2xl border border-gray-800 bg-gray-900 p-5">
+            <h3 class="text-sm font-bold text-white mb-4"><i class="fas fa-paper-plane text-peri mr-2"></i>Status Digital Delivery</h3>
+            @php $totalDelivery = max(1, $deliveryAnalytics['total'] ?? 0); @endphp
+            @if(($deliveryAnalytics['total'] ?? 0) === 0)
+                <p class="text-sm text-gray-500 text-center py-6">Tidak ada item digital pada periode ini.</p>
+            @else
+            <div class="space-y-4">
+                <div class="grid grid-cols-3 gap-3 text-center">
+                    <div class="rounded-xl bg-green-500/10 p-3">
+                        <div class="text-xl font-extrabold text-green-400">{{ number_format($deliveryAnalytics['delivered']) }}</div>
+                        <div class="text-xs text-gray-500 mt-0.5">Terkirim</div>
+                    </div>
+                    <div class="rounded-xl bg-amber-500/10 p-3">
+                        <div class="text-xl font-extrabold text-amber-400">{{ number_format($deliveryAnalytics['pending']) }}</div>
+                        <div class="text-xs text-gray-500 mt-0.5">Menunggu</div>
+                    </div>
+                    <div class="rounded-xl bg-red-500/10 p-3">
+                        <div class="text-xl font-extrabold text-red-400">{{ number_format($deliveryAnalytics['failed']) }}</div>
+                        <div class="text-xs text-gray-500 mt-0.5">Gagal</div>
+                    </div>
+                </div>
+                <div class="h-2 bg-gray-800 rounded-full overflow-hidden flex gap-0.5">
+                    @if($deliveryAnalytics['delivered'] > 0)
+                    <div class="h-full bg-green-500 rounded-l-full" style="width: {{ ($deliveryAnalytics['delivered'] / $totalDelivery) * 100 }}%"></div>
+                    @endif
+                    @if($deliveryAnalytics['pending'] > 0)
+                    <div class="h-full bg-amber-500" style="width: {{ ($deliveryAnalytics['pending'] / $totalDelivery) * 100 }}%"></div>
+                    @endif
+                    @if($deliveryAnalytics['failed'] > 0)
+                    <div class="h-full bg-red-500 rounded-r-full" style="width: {{ ($deliveryAnalytics['failed'] / $totalDelivery) * 100 }}%"></div>
+                    @endif
+                </div>
+                <p class="text-xs text-gray-500 text-right">Total {{ number_format($deliveryAnalytics['total']) }} item</p>
+            </div>
+            @endif
+        </div>
+    </div>
+
     {{-- Top Products --}}
     <div class="rounded-2xl border border-gray-800 bg-gray-900 overflow-hidden">
         <div class="px-5 py-4 border-b border-gray-800">

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Coupon;
+use App\Models\CouponUsage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -104,5 +105,24 @@ class CouponController extends Controller
     {
         $coupon->delete();
         return back()->with('success', 'Kupon berhasil dihapus.');
+    }
+
+    public function usages(Coupon $coupon)
+    {
+        $usages = CouponUsage::with(['order', 'user'])
+            ->where('coupon_id', $coupon->id)
+            ->latest('used_at')
+            ->paginate(25);
+
+        $stats = [
+            'total_uses'       => $coupon->used_count,
+            'total_discount'   => CouponUsage::where('coupon_id', $coupon->id)->sum('discount_amount'),
+            'unique_users'     => CouponUsage::where('coupon_id', $coupon->id)->whereNotNull('user_id')->distinct('user_id')->count('user_id'),
+            'last_used_at'     => ($last = CouponUsage::where('coupon_id', $coupon->id)->max('used_at'))
+                                  ? \Carbon\Carbon::parse($last)
+                                  : null,
+        ];
+
+        return view('admin.coupons.usages', compact('coupon', 'usages', 'stats'));
     }
 }

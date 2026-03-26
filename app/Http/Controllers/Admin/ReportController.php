@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\CouponUsage;
 use Illuminate\Http\Request;
@@ -13,8 +14,8 @@ class ReportController extends Controller
     public function index(Request $request)
     {
         $request->validate([
-            'date_from' => 'nullable|date',
-            'date_to'   => 'nullable|date|after_or_equal:date_from',
+            'date_from' => 'nullable|date_format:Y-m-d',
+            'date_to'   => 'nullable|date_format:Y-m-d',
         ]);
 
         $dateFrom = $request->input('date_from', now()->startOfMonth()->toDateString());
@@ -106,6 +107,30 @@ class ReportController extends Controller
             'coupon_revenue' => (int) $couponRevenue,
         ];
 
+        // Payment method breakdown
+        $paymentBreakdown = Order::where('status', '!=', 'cancelled')
+            ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->selectRaw("COALESCE(payment_method, 'manual') as method, COUNT(*) as count, SUM(total) as revenue")
+            ->groupBy('method')
+            ->orderByDesc('count')
+            ->get();
+
+        // Digital delivery analytics
+        $deliveryStats = OrderItem::whereHas('order', function ($q) use ($dateFrom, $dateTo) {
+                $q->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+                  ->where('status', '!=', 'cancelled');
+            })
+            ->selectRaw("delivery_status, COUNT(*) as count")
+            ->groupBy('delivery_status')
+            ->pluck('count', 'delivery_status');
+
+        $deliveryAnalytics = [
+            'total'     => (int) $deliveryStats->sum(),
+            'delivered' => (int) ($deliveryStats->get('delivered') ?? 0),
+            'pending'   => (int) ($deliveryStats->get('pending') ?? 0),
+            'failed'    => (int) ($deliveryStats->get('failed') ?? 0),
+        ];
+
         return view('admin.reports-index', compact(
             'dateFrom',
             'dateTo',
@@ -115,15 +140,17 @@ class ReportController extends Controller
             'statusBreakdown',
             'checkoutFunnel',
             'repeatBuyers',
-            'couponConversion'
+            'couponConversion',
+            'paymentBreakdown',
+            'deliveryAnalytics'
         ));
     }
 
     public function export(Request $request)
     {
         $request->validate([
-            'date_from' => 'nullable|date',
-            'date_to'   => 'nullable|date|after_or_equal:date_from',
+            'date_from' => 'nullable|date_format:Y-m-d',
+            'date_to'   => 'nullable|date_format:Y-m-d',
         ]);
 
         $dateFrom = $request->input('date_from', now()->startOfMonth()->toDateString());
