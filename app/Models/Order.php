@@ -54,6 +54,15 @@ class Order extends Model
         return 'Rp ' . number_format($this->total, 0, ',', '.');
     }
 
+    /**
+     * Count of order items that have not yet been delivered digitally.
+     * Uses the already-eager-loaded items relation when available.
+     */
+    public function getPendingDeliveryCountAttribute(): int
+    {
+        return $this->items->filter(fn ($i) => $i->delivery_status !== 'delivered')->count();
+    }
+
     public function getStatusLabelAttribute(): string
     {
         return match ($this->status) {

@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Mail\OrderStatusUpdated;
 use App\Models\Order;
+use App\Models\OrderItem;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 
 class OrderController extends Controller
@@ -19,7 +21,14 @@ class OrderController extends Controller
 
         // Filter by status
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            if ($request->status === 'pending_delivery') {
+                // Orders that have at least one undelivered item
+                $query->whereHas('items', function ($q) {
+                    $q->where('delivery_status', '!=', 'delivered');
+                })->whereIn('status', ['processing', 'pending']);
+            } else {
+                $query->where('status', $request->status);
+            }
         }
 
         // Search by order number or customer name
@@ -45,12 +54,15 @@ class OrderController extends Controller
 
         // Stats untuk header cards
         $stats = [
-            'total'      => Order::count(),
-            'pending'    => Order::where('status', 'pending')->count(),
-            'processing' => Order::where('status', 'processing')->count(),
-            'completed'  => Order::where('status', 'completed')->count(),
-            'cancelled'  => Order::where('status', 'cancelled')->count(),
-            'revenue'    => Order::where('status', 'completed')->sum('total'),
+            'total'            => Order::count(),
+            'pending'          => Order::where('status', 'pending')->count(),
+            'processing'       => Order::where('status', 'processing')->count(),
+            'completed'        => Order::where('status', 'completed')->count(),
+            'cancelled'        => Order::where('status', 'cancelled')->count(),
+            'revenue'          => Order::where('status', 'completed')->sum('total'),
+            'pending_delivery' => Order::whereIn('status', ['processing', 'pending'])
+                ->whereHas('items', fn ($q) => $q->where('delivery_status', '!=', 'delivered'))
+                ->count(),
         ];
 
         return view('admin.orders.index', compact('orders', 'stats'));
@@ -310,17 +322,73 @@ class OrderController extends Controller
             'delivery_type' => $request->delivery_type,
             'delivery_data' => $request->delivery_data,
             'delivered_at'  => now(),
+            'delivery_status' => 'delivered',
+            'delivery_attempts' => ($item->delivery_attempts ?? 0) + 1,
+            'last_delivery_error' => null,
+            'delivery_meta' => array_merge((array) $item->delivery_meta, [
+                'delivered_by' => Auth::id(),
+                'delivered_via' => 'admin_manual',
+                'delivered_at' => now()->toDateTimeString(),
+            ]),
         ]);
 
         // Kirim notifikasi in-app ke customer
         if ($order->user_id) {
             try {
-                \App\Models\Notification::digitalDelivery($order, $item);
+                \App\Models\Notification::digitalDelivery($order, $item, 'delivered');
             } catch (\Throwable $e) {
+                $item->update([
+                    'delivery_status' => 'failed',
+                    'last_delivery_error' => mb_strimwidth($e->getMessage(), 0, 1000, '...'),
+                ]);
                 report($e);
             }
         }
 
         return back()->with('success', "Data delivery untuk \"{$item->product_name}\" berhasil dikirim.");
+    }
+
+    /**
+     * Retry notifikasi delivery untuk item order yang sudah memiliki data.
+     */
+    public function retryDelivery(Order $order, \App\Models\OrderItem $item)
+    {
+        if ($item->order_id !== $order->id) {
+            abort(404, 'Item tidak ditemukan dalam order ini.');
+        }
+
+        if (!$item->delivery_data) {
+            return back()->with('error', 'Data delivery belum tersedia untuk item ini.');
+        }
+
+        if (!$order->user_id) {
+            return back()->with('error', 'Order guest tidak memiliki target notifikasi in-app.');
+        }
+
+        $item->increment('delivery_attempts');
+
+        try {
+            \App\Models\Notification::digitalDelivery($order, $item, 'retry');
+
+            $item->update([
+                'delivery_status' => 'delivered',
+                'last_delivery_error' => null,
+                'delivery_meta' => array_merge((array) $item->delivery_meta, [
+                    'last_retry_by' => Auth::id(),
+                    'last_retry_at' => now()->toDateTimeString(),
+                ]),
+            ]);
+
+            return back()->with('success', "Retry notifikasi delivery untuk \"{$item->product_name}\" berhasil.");
+        } catch (\Throwable $e) {
+            $item->update([
+                'delivery_status' => 'failed',
+                'last_delivery_error' => mb_strimwidth($e->getMessage(), 0, 1000, '...'),
+            ]);
+
+            report($e);
+
+            return back()->with('error', 'Retry notifikasi gagal. Silakan cek log dan coba lagi.');
+        }
     }
 }

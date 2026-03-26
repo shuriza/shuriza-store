@@ -26,7 +26,15 @@ class Setting extends Model
      */
     public static function set(string $key, mixed $value): void
     {
-        static::updateOrCreate(['key' => $key], ['value' => $value]);
+        static::updateOrCreate(
+            ['key' => $key],
+            [
+                'group' => 'general',
+                'type' => 'text',
+                'label' => $key,
+                'value' => (string) $value,
+            ]
+        );
         Cache::forget('app_settings');
     }
 

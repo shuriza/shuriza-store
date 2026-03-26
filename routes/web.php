@@ -345,6 +345,7 @@ Route::prefix("admin")
                 Route::get("/", [AdminCouponController::class, "index"])->name("index");
                 Route::get("/create", [AdminCouponController::class, "create"])->name("create");
                 Route::post("/", [AdminCouponController::class, "store"])->name("store");
+                Route::get("/{coupon}/usages", [AdminCouponController::class, "usages"])->name("usages");
                 Route::get("/{coupon}/edit", [AdminCouponController::class, "edit"])->name("edit");
                 Route::put("/{coupon}", [AdminCouponController::class, "update"])->name("update");
                 Route::patch("/{coupon}/toggle", [AdminCouponController::class, "toggleActive"])->name("toggle");
@@ -408,6 +409,7 @@ Route::prefix("admin")
 
         // Digital Delivery
         Route::post("/orders/{order}/items/{item}/deliver", [AdminOrderController::class, "deliverItem"])->name("orders.deliver-item");
+        Route::post("/orders/{order}/items/{item}/retry-delivery", [AdminOrderController::class, "retryDelivery"])->name("orders.retry-delivery");
     });
 
 /*

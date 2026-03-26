@@ -10,3 +10,6 @@ Artisan::command('inspire', function () {
 
 // Auto-cancel pending orders (runs daily at midnight)
 Schedule::command('orders:auto-cancel')->daily();
+
+// Replay failed payment webhooks every 10 minutes
+Schedule::command('payment:webhooks:replay --limit=100')->everyTenMinutes();

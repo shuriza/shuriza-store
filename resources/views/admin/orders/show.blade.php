@@ -63,38 +63,63 @@
                         {{-- Digital Delivery --}}
                         <tr>
                             <td colspan="4" class="pb-3">
-                                @if($item->delivered_at)
-                                    <div class="flex items-start gap-2 px-3 py-2 bg-green-900/20 border border-green-800/30 rounded-xl">
-                                        <i class="fas fa-check-circle text-green-400 mt-0.5"></i>
+                                @php
+                                    $statusClass = match($item->delivery_status) {
+                                        'delivered' => 'bg-green-900/20 border-green-800/30 text-green-400',
+                                        'failed' => 'bg-red-900/20 border-red-800/30 text-red-400',
+                                        default => 'bg-gray-800 border-gray-700 text-gray-400',
+                                    };
+                                @endphp
+
+                                @if($item->delivery_data)
+                                    <div class="flex items-start gap-2 px-3 py-2 border rounded-xl {{ $statusClass }}">
+                                        <i class="fas {{ $item->delivery_status === 'failed' ? 'fa-triangle-exclamation' : ($item->delivery_status === 'delivered' ? 'fa-check-circle' : 'fa-clock') }} mt-0.5"></i>
                                         <div class="flex-1 min-w-0">
-                                            <span class="text-xs text-green-400 font-medium">Terkirim {{ $item->delivered_at->format('d M Y H:i') }}</span>
+                                            <span class="text-xs font-medium">
+                                                {{ ucfirst($item->delivery_status ?? 'pending') }}
+                                                @if($item->delivered_at)
+                                                    • {{ $item->delivered_at->format('d M Y H:i') }}
+                                                @endif
+                                                • Attempt: {{ $item->delivery_attempts ?? 0 }}
+                                            </span>
                                             <p class="text-xs text-gray-300 font-mono mt-1 break-all">{{ $item->delivery_data }}</p>
+                                            @if($item->last_delivery_error)
+                                                <p class="text-xs text-red-400 mt-1">Error: {{ $item->last_delivery_error }}</p>
+                                            @endif
                                         </div>
-                                    </div>
-                                @else
-                                    <div x-data="{ open: false }">
-                                        <button @click="open = !open" type="button"
-                                                class="text-xs text-peri hover:text-peri/80 font-medium flex items-center gap-1">
-                                            <i class="fas fa-paper-plane"></i> Kirim Data Produk Digital
-                                        </button>
-                                        <form x-show="open" x-cloak method="POST"
-                                              action="{{ route('admin.orders.deliver-item', [$order, $item]) }}"
-                                              class="mt-2 p-3 bg-gray-800 rounded-xl border border-gray-700 space-y-2">
-                                            @csrf
-                                            <select name="delivery_type" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
-                                                <option value="account">Akun (username & password)</option>
-                                                <option value="link">Link Download</option>
-                                                <option value="code">Kode / Voucher</option>
-                                                <option value="other">Lainnya</option>
-                                            </select>
-                                            <textarea name="delivery_data" rows="2" required placeholder="Masukkan data produk digital..."
-                                                      class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500"></textarea>
-                                            <button type="submit" class="px-4 py-1.5 bg-peri text-white text-xs font-semibold rounded-lg hover:bg-peri/80 transition">
-                                                <i class="fas fa-paper-plane mr-1"></i> Kirim
-                                            </button>
-                                        </form>
+                                        @if($item->delivery_status === 'failed')
+                                            <form method="POST" action="{{ route('admin.orders.retry-delivery', [$order, $item]) }}">
+                                                @csrf
+                                                <button type="submit" class="px-3 py-1 text-[11px] rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 transition">
+                                                    <i class="fas fa-rotate-right mr-1"></i> Retry
+                                                </button>
+                                            </form>
+                                        @endif
                                     </div>
                                 @endif
+
+                                <div x-data="{ open: false }" class="mt-2">
+                                    <button @click="open = !open" type="button"
+                                            class="text-xs text-peri hover:text-peri/80 font-medium flex items-center gap-1">
+                                        <i class="fas fa-paper-plane"></i> {{ $item->delivery_data ? 'Update & Kirim Ulang Data' : 'Kirim Data Produk Digital' }}
+                                    </button>
+                                    <form x-show="open" x-cloak method="POST"
+                                          action="{{ route('admin.orders.deliver-item', [$order, $item]) }}"
+                                          class="mt-2 p-3 bg-gray-800 rounded-xl border border-gray-700 space-y-2">
+                                        @csrf
+                                        <select name="delivery_type" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+                                            <option value="account" {{ $item->delivery_type === 'account' ? 'selected' : '' }}>Akun (username & password)</option>
+                                            <option value="link" {{ $item->delivery_type === 'link' ? 'selected' : '' }}>Link Download</option>
+                                            <option value="code" {{ $item->delivery_type === 'code' ? 'selected' : '' }}>Kode / Voucher</option>
+                                            <option value="other" {{ $item->delivery_type === 'other' ? 'selected' : '' }}>Lainnya</option>
+                                        </select>
+                                        <textarea name="delivery_data" rows="2" required placeholder="Masukkan data produk digital..."
+                                                  class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500">{{ old('delivery_data', $item->delivery_data) }}</textarea>
+                                        <button type="submit" class="px-4 py-1.5 bg-peri text-white text-xs font-semibold rounded-lg hover:bg-peri/80 transition">
+                                            <i class="fas fa-paper-plane mr-1"></i> Kirim
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                         @endforeach

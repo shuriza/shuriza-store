@@ -72,12 +72,18 @@
                                 </div>
                                 <span class="text-sm font-semibold text-gray-900 dark:text-white flex-shrink-0">Rp {{ number_format($item->quantity * $item->price, 0, ',', '.') }}</span>
                             </div>
-                            @if($item->delivered_at)
-                                <div class="ml-[72px] mt-2 p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/40">
+                            @if($item->delivery_data)
+                                @php
+                                    $isDelivered = $item->delivery_status === 'delivered';
+                                @endphp
+                                <div class="ml-[72px] mt-2 p-3 rounded-xl {{ $isDelivered ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800/40' : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800/40' }} border">
                                     <div class="flex items-center gap-2 mb-1">
-                                        <i class="fas fa-check-circle text-green-500 text-xs"></i>
-                                        <span class="text-xs font-semibold text-green-700 dark:text-green-400">
-                                            Dikirim {{ $item->delivered_at->format('d M Y, H:i') }}
+                                        <i class="fas {{ $isDelivered ? 'fa-check-circle text-green-500' : 'fa-clock text-yellow-500' }} text-xs"></i>
+                                        <span class="text-xs font-semibold {{ $isDelivered ? 'text-green-700 dark:text-green-400' : 'text-yellow-700 dark:text-yellow-400' }}">
+                                            {{ $isDelivered ? 'Dikirim' : 'Sedang diproses' }}
+                                            @if($item->delivered_at)
+                                                {{ $item->delivered_at->format('d M Y, H:i') }}
+                                            @endif
                                         </span>
                                     </div>
                                     <div class="text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg p-2 font-mono text-xs break-all">

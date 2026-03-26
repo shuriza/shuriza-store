@@ -17,6 +17,10 @@ class OrderItem extends Model
         'delivery_data',
         'delivery_type',
         'delivered_at',
+        'delivery_status',
+        'delivery_attempts',
+        'last_delivery_error',
+        'delivery_meta',
     ];
 
     protected $casts = [
@@ -24,6 +28,8 @@ class OrderItem extends Model
         'subtotal'     => 'integer',
         'quantity'     => 'integer',
         'delivered_at' => 'datetime',
+        'delivery_attempts' => 'integer',
+        'delivery_meta' => 'array',
     ];
 
     /*
@@ -59,5 +65,30 @@ class OrderItem extends Model
     public function getFormattedSubtotalAttribute(): string
     {
         return 'Rp ' . number_format($this->subtotal, 0, ',', '.');
+    }
+
+    public function getDeliveryStatusLabelAttribute(): string
+    {
+        return match($this->delivery_status) {
+            'delivered' => 'Terkirim',
+            'failed'    => 'Gagal',
+            default     => 'Menunggu',
+        };
+    }
+
+    public function getDeliveryTypeLabelAttribute(): string
+    {
+        return match($this->delivery_type) {
+            'account' => 'Akun',
+            'link'    => 'Link Download',
+            'code'    => 'Kode/Voucher',
+            'other'   => 'Lainnya',
+            default   => '-',
+        };
+    }
+
+    public function needsDelivery(): bool
+    {
+        return $this->delivery_status !== 'delivered';
     }
 }

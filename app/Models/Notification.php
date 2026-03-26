@@ -66,13 +66,17 @@ class Notification extends Model
     /**
      * Create a notification for digital delivery.
      */
-    public static function digitalDelivery(Order $order): self
+    public static function digitalDelivery(Order $order, OrderItem $item, string $status = 'delivered'): self
     {
+        $statusMessage = $status === 'retry'
+            ? 'Pengiriman ulang data produk digital berhasil. Cek detail pesanan.'
+            : 'Produk digital kamu sudah tersedia. Cek detail pesanan untuk melihat data akun/link.';
+
         return static::create([
             'user_id' => $order->user_id,
             'type'    => 'delivery',
-            'title'   => "Produk #{$order->order_number} Sudah Dikirim",
-            'message' => "Produk digital kamu sudah tersedia. Cek detail pesanan untuk melihat data akun/link.",
+            'title'   => "Item {$item->product_name} untuk Order #{$order->order_number} Terkirim",
+            'message' => $statusMessage,
             'link'    => route('order.show', $order->order_number),
             'icon'    => 'fas fa-gift text-green-400',
         ]);

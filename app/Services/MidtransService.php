@@ -132,7 +132,7 @@ class MidtransService
     /**
      * Handle notification callback dari Midtrans.
      */
-    public static function handleNotification(array $payload): array
+    public static function handleNotification(array $payload, array $headers = []): array
     {
         $serverKey = static::getServerKey();
         $orderId = $payload['order_id'] ?? null;
@@ -142,16 +142,39 @@ class MidtransService
         $transactionStatus = $payload['transaction_status'] ?? null;
         $fraudStatus = $payload['fraud_status'] ?? 'accept';
 
+        if (!$orderId || !$statusCode || !$grossAmount || !$signatureKey) {
+            return ['success' => false, 'message' => 'Payload tidak lengkap'];
+        }
+
         // Verify signature (use hash_equals for timing-attack resistance)
         $expectedSignature = hash('sha512', $orderId . $statusCode . $grossAmount . $serverKey);
         if (!hash_equals($expectedSignature, $signatureKey ?? '')) {
-            Log::warning('Midtrans invalid signature', compact('orderId', 'signatureKey', 'expectedSignature'));
+            Log::warning('Midtrans invalid signature', [
+                'orderId' => $orderId,
+                'statusCode' => $statusCode,
+            ]);
             return ['success' => false, 'message' => 'Invalid signature'];
         }
 
-        $order = Order::where('order_number', $orderId)->first();
+        $order = Order::with('items.product')->where('order_number', $orderId)->first();
         if (!$order) {
             return ['success' => false, 'message' => 'Order not found'];
+        }
+
+        $receivedAmount = (int) round((float) $grossAmount);
+        $expectedAmount = (int) $order->total;
+
+        if ($receivedAmount !== $expectedAmount) {
+            Log::warning('Midtrans amount mismatch', [
+                'orderId' => $orderId,
+                'expected' => $expectedAmount,
+                'received' => $receivedAmount,
+            ]);
+            return ['success' => false, 'message' => 'Invalid amount'];
+        }
+
+        if ($order->paid_at && in_array($transactionStatus, ['capture', 'settlement'], true)) {
+            return ['success' => true, 'order' => $order, 'idempotent' => true];
         }
 
         $order->update([
@@ -161,17 +184,21 @@ class MidtransService
         // Map status
         if ($transactionStatus === 'capture' || $transactionStatus === 'settlement') {
             if ($fraudStatus === 'accept') {
-                $order->update([
-                    'status'  => 'processing',
-                    'paid_at' => now(),
-                ]);
+                if (!$order->paid_at) {
+                    $oldStatus = $order->status;
 
-                // Kirim notifikasi
-                if ($order->user_id) {
-                    try {
-                        \App\Models\Notification::orderStatusChanged($order, 'pending');
-                    } catch (\Throwable $e) {
-                        report($e);
+                    $order->update([
+                        'status'  => 'processing',
+                        'paid_at' => now(),
+                    ]);
+
+                    // Kirim notifikasi
+                    if ($order->user_id) {
+                        try {
+                            \App\Models\Notification::orderStatusChanged($order, $oldStatus);
+                        } catch (\Throwable $e) {
+                            report($e);
+                        }
                     }
                 }
             }
