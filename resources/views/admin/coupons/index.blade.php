@@ -59,6 +59,12 @@
                                 </td>
                                 <td class="px-4 py-3 text-gray-300">
                                     {{ $coupon->used_count }}{{ $coupon->usage_limit ? '/' . $coupon->usage_limit : '' }}
+                                    @if($coupon->usage_per_user)
+                                        <span class="block text-[11px] text-gray-500">Maks {{ $coupon->usage_per_user }}× / user</span>
+                                    @endif
+                                    @if($coupon->first_order_only)
+                                        <span class="block text-[11px] text-amber-500">Order pertama</span>
+                                    @endif
                                 </td>
                                 <td class="px-4 py-3 text-xs text-gray-400">
                                     @if($coupon->starts_at || $coupon->expires_at)

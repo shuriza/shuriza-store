@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
@@ -62,8 +63,76 @@ class ReportController extends Controller
             ->get()
             ->keyBy('status');
 
+        // ── Advanced Analytics ────────────────────────────────────────────────
+
+        // Coupon analytics: total discount given and top coupons used
+        $couponStats = Order::where('status', '!=', 'cancelled')
+            ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->whereNotNull('coupon_code')
+            ->where('discount_amount', '>', 0)
+            ->selectRaw('coupon_code, COUNT(*) as times_used, SUM(discount_amount) as total_discount')
+            ->groupBy('coupon_code')
+            ->orderByDesc('times_used')
+            ->limit(10)
+            ->get();
+
+        $totalDiscount = Order::where('status', '!=', 'cancelled')
+            ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->sum('discount_amount');
+
+        // Category revenue breakdown
+        $categoryRevenue = DB::table('categories')
+            ->join('products', 'categories.id', '=', 'products.category_id')
+            ->join('order_items', 'products.id', '=', 'order_items.product_id')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->where('orders.status', '!=', 'cancelled')
+            ->whereBetween('orders.created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->select(
+                'categories.id',
+                'categories.name',
+                DB::raw('SUM(order_items.subtotal) as cat_revenue'),
+                DB::raw('SUM(order_items.quantity) as cat_sold')
+            )
+            ->groupBy('categories.id', 'categories.name')
+            ->orderByDesc('cat_revenue')
+            ->get();
+
+        // Customer stats: new vs returning (based on order history, not registration date)
+        // "New" = users whose FIRST-EVER order falls within the report period
+        // "Returning" = users who have at least one prior order before the period
+
+        // All unique user IDs who ordered in the period (non-cancelled)
+        $periodUserIds = Order::where('status', '!=', 'cancelled')
+            ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->whereNotNull('user_id')
+            ->select('user_id')
+            ->distinct()
+            ->pluck('user_id');
+
+        $newCustomers = 0;
+        $returningCustomers = 0;
+
+        if ($periodUserIds->isNotEmpty()) {
+            // Users whose earliest non-cancelled order is within the period = new customers
+            // Get the minimum order date for each user in the period
+            $userFirstOrders = Order::notCancelled()
+                ->whereIn('user_id', $periodUserIds)
+                ->selectRaw('user_id, MIN(created_at) as first_order_at')
+                ->groupBy('user_id')
+                ->get();
+
+            foreach ($userFirstOrders as $row) {
+                if ($row->first_order_at >= $dateFrom && $row->first_order_at <= $dateTo . ' 23:59:59') {
+                    $newCustomers++;
+                } else {
+                    $returningCustomers++;
+                }
+            }
+        }
+
         return view('admin.reports-index', compact(
-            'dateFrom', 'dateTo', 'revenue', 'dailyRevenue', 'topProducts', 'statusBreakdown'
+            'dateFrom', 'dateTo', 'revenue', 'dailyRevenue', 'topProducts', 'statusBreakdown',
+            'couponStats', 'totalDiscount', 'categoryRevenue', 'newCustomers', 'returningCustomers'
         ));
     }
 

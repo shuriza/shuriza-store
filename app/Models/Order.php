@@ -114,6 +114,14 @@ class Order extends Model
         return $query->where('status', 'cancelled');
     }
 
+    /**
+     * Non-cancelled orders (pending, processing, completed).
+     */
+    public function scopeNotCancelled($query)
+    {
+        return $query->whereIn('status', ['pending', 'processing', 'completed']);
+    }
+
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
     public static function generateOrderNumber(): string

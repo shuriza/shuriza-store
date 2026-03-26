@@ -64,12 +64,36 @@
                         <tr>
                             <td colspan="4" class="pb-3">
                                 @if($item->delivered_at)
-                                    <div class="flex items-start gap-2 px-3 py-2 bg-green-900/20 border border-green-800/30 rounded-xl">
-                                        <i class="fas fa-check-circle text-green-400 mt-0.5"></i>
-                                        <div class="flex-1 min-w-0">
-                                            <span class="text-xs text-green-400 font-medium">Terkirim {{ $item->delivered_at->format('d M Y H:i') }}</span>
-                                            <p class="text-xs text-gray-300 font-mono mt-1 break-all">{{ $item->delivery_data }}</p>
+                                    <div x-data="{ editing: false }">
+                                        <div class="flex items-start gap-2 px-3 py-2 bg-green-900/20 border border-green-800/30 rounded-xl">
+                                            <i class="fas fa-check-circle text-green-400 mt-0.5"></i>
+                                            <div class="flex-1 min-w-0">
+                                                <div class="flex items-center justify-between gap-2">
+                                                    <span class="text-xs text-green-400 font-medium">Terkirim {{ $item->delivered_at->format('d M Y H:i') }}</span>
+                                                    <button @click="editing = !editing" type="button"
+                                                            class="text-xs text-amber-400 hover:text-amber-300 font-medium flex items-center gap-1 shrink-0">
+                                                        <i class="fas fa-edit"></i> <span x-text="editing ? 'Batal' : 'Perbarui'"></span>
+                                                    </button>
+                                                </div>
+                                                <p class="text-xs text-gray-300 font-mono mt-1 break-all" x-show="!editing">{{ $item->delivery_data }}</p>
+                                            </div>
                                         </div>
+                                        <form x-show="editing" x-cloak method="POST"
+                                              action="{{ route('admin.orders.redeliver-item', [$order, $item]) }}"
+                                              class="mt-2 p-3 bg-gray-800 rounded-xl border border-gray-700 space-y-2">
+                                            @csrf
+                                            <select name="delivery_type" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white">
+                                                <option value="account" {{ $item->delivery_type === 'account' ? 'selected' : '' }}>Akun (username & password)</option>
+                                                <option value="link" {{ $item->delivery_type === 'link' ? 'selected' : '' }}>Link Download</option>
+                                                <option value="code" {{ $item->delivery_type === 'code' ? 'selected' : '' }}>Kode / Voucher</option>
+                                                <option value="other" {{ $item->delivery_type === 'other' ? 'selected' : '' }}>Lainnya</option>
+                                            </select>
+                                            <textarea name="delivery_data" rows="2" required
+                                                      class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500">{{ $item->delivery_data }}</textarea>
+                                            <button type="submit" class="px-4 py-1.5 bg-amber-500 text-white text-xs font-semibold rounded-lg hover:bg-amber-600 transition">
+                                                <i class="fas fa-sync-alt mr-1"></i> Perbarui & Kirim Ulang
+                                            </button>
+                                        </form>
                                     </div>
                                 @else
                                     <div x-data="{ open: false }">

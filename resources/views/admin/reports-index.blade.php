@@ -129,5 +129,78 @@
         </div>
         @endif
     </div>
+
+    {{-- Advanced Analytics --}}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+
+        {{-- Category Revenue --}}
+        <div class="rounded-2xl border border-gray-800 bg-gray-900 overflow-hidden">
+            <div class="px-5 py-4 border-b border-gray-800">
+                <h3 class="text-sm font-bold text-white"><i class="fas fa-layer-group text-blue-400 mr-2"></i>Pendapatan per Kategori</h3>
+            </div>
+            @if($categoryRevenue->isEmpty())
+                <p class="text-sm text-gray-500 text-center py-8">Tidak ada data pada periode ini.</p>
+            @else
+            @php $maxCatRev = $categoryRevenue->max('cat_revenue') ?: 1; @endphp
+            <div class="p-5 space-y-3">
+                @foreach($categoryRevenue as $cat)
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs font-medium text-gray-300">{{ $cat->name }}</span>
+                        <span class="text-xs text-gray-400">{{ number_format($cat->cat_sold) }} terjual · Rp {{ number_format($cat->cat_revenue, 0, ',', '.') }}</span>
+                    </div>
+                    <div class="h-2 bg-gray-800 rounded-full overflow-hidden">
+                        <div class="h-full bg-blue-500 rounded-full" style="width: {{ ($cat->cat_revenue / $maxCatRev) * 100 }}%"></div>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+            @endif
+        </div>
+
+        {{-- Coupon & Customer Stats --}}
+        <div class="space-y-6">
+
+            {{-- Customer Stats --}}
+            <div class="rounded-2xl border border-gray-800 bg-gray-900 p-5">
+                <h3 class="text-sm font-bold text-white mb-4"><i class="fas fa-users text-emerald-400 mr-2"></i>Statistik Pelanggan</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-emerald-500/10 rounded-xl p-3 text-center">
+                        <div class="text-2xl font-extrabold text-emerald-400">{{ number_format($newCustomers) }}</div>
+                        <div class="text-xs text-gray-400 mt-1">Pelanggan Baru</div>
+                    </div>
+                    <div class="bg-blue-500/10 rounded-xl p-3 text-center">
+                        <div class="text-2xl font-extrabold text-blue-400">{{ number_format($returningCustomers) }}</div>
+                        <div class="text-xs text-gray-400 mt-1">Pelanggan Lama</div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Coupon Stats --}}
+            <div class="rounded-2xl border border-gray-800 bg-gray-900 p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-bold text-white"><i class="fas fa-ticket-alt text-amber-400 mr-2"></i>Statistik Kupon</h3>
+                    <span class="text-xs text-gray-400">Total diskon: <span class="text-red-400 font-semibold">Rp {{ number_format($totalDiscount, 0, ',', '.') }}</span></span>
+                </div>
+                @if($couponStats->isEmpty())
+                    <p class="text-xs text-gray-500 text-center py-4">Tidak ada kupon yang digunakan.</p>
+                @else
+                <div class="space-y-2">
+                    @foreach($couponStats as $cs)
+                    <div class="flex items-center justify-between py-1.5 border-b border-gray-800/50 last:border-0">
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center gap-1 rounded-lg bg-peri/10 px-2 py-0.5 text-xs font-bold text-peri tracking-wider">{{ $cs->coupon_code }}</span>
+                            <span class="text-xs text-gray-400">{{ $cs->times_used }}× digunakan</span>
+                        </div>
+                        <span class="text-xs text-red-400 font-semibold">-Rp {{ number_format($cs->total_discount, 0, ',', '.') }}</span>
+                    </div>
+                    @endforeach
+                </div>
+                @endif
+            </div>
+
+        </div>
+
+    </div>
 </div>
 @endsection
