@@ -618,6 +618,7 @@
                     <li><a href="{{ route('pages.how-to-buy') }}" class="text-sm text-gray-500 dark:text-gray-400 hover:text-peri dark:hover:text-peri-light transition-colors flex items-center gap-2"><i class="fas fa-info-circle w-4 text-xs text-peri"></i>Cara Pembelian</a></li>
                     <li><a href="{{ route('pages.faq') }}" class="text-sm text-gray-500 dark:text-gray-400 hover:text-peri dark:hover:text-peri-light transition-colors flex items-center gap-2"><i class="fas fa-question-circle w-4 text-xs text-peri"></i>FAQ</a></li>
                     <li><a href="{{ route('pages.about') }}" class="text-sm text-gray-500 dark:text-gray-400 hover:text-peri dark:hover:text-peri-light transition-colors flex items-center gap-2"><i class="fas fa-store w-4 text-xs text-peri"></i>Tentang Kami</a></li>
+                    <li><a href="{{ route('pages.contact') }}" class="text-sm text-gray-500 dark:text-gray-400 hover:text-peri dark:hover:text-peri-light transition-colors flex items-center gap-2"><i class="fas fa-headset w-4 text-xs text-peri"></i>Hubungi Kami</a></li>
                     <li><a href="{{ route('articles.index') }}" class="text-sm text-gray-500 dark:text-gray-400 hover:text-peri dark:hover:text-peri-light transition-colors flex items-center gap-2"><i class="fas fa-newspaper w-4 text-xs text-peri"></i>Artikel</a></li>
                     <li><a href="{{ route('pages.privacy') }}" class="text-sm text-gray-500 dark:text-gray-400 hover:text-peri dark:hover:text-peri-light transition-colors flex items-center gap-2"><i class="fas fa-shield-alt w-4 text-xs text-peri"></i>Kebijakan Privasi</a></li>
                     <li><a href="{{ route('pages.terms') }}" class="text-sm text-gray-500 dark:text-gray-400 hover:text-peri dark:hover:text-peri-light transition-colors flex items-center gap-2"><i class="fas fa-file-contract w-4 text-xs text-peri"></i>Syarat & Ketentuan</a></li>
@@ -634,7 +635,7 @@
                 <div class="space-y-3 text-sm text-gray-500 dark:text-gray-400">
                     <div class="flex items-start gap-2">
                         <i class="fas fa-map-marker-alt w-4 text-peri mt-0.5 text-xs"></i>
-                        <span>{{ setting('store_address', 'Kediri, Jawa Timur') }}</span>
+                        <span>{{ setting('store_address', 'Jl. Raya Kertosono-Kediri No. 2, Desa Muneng, Kec. Purwoasri, Kab. Kediri, Jawa Timur 64154') }}</span>
                     </div>
                     <div class="flex items-start gap-2">
                         <i class="fab fa-whatsapp w-4 text-peri mt-0.5 text-xs"></i>

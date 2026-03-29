@@ -164,6 +164,7 @@ Route::get("/faq", [PageController::class, "faq"])->name("pages.faq");
 Route::get("/kebijakan-privasi", [PageController::class, "privacy"])->name("pages.privacy");
 Route::get("/syarat-ketentuan", [PageController::class, "terms"])->name("pages.terms");
 Route::get("/tentang-kami", [PageController::class, "about"])->name("pages.about");
+Route::get("/hubungi-kami", [PageController::class, "contact"])->name("pages.contact");
 
 // Artikel
 Route::get("/artikel", [ArticleController::class, "index"])->name("articles.index");
