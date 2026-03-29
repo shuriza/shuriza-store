@@ -62,8 +62,66 @@ class ReportController extends Controller
             ->get()
             ->keyBy('status');
 
+        // ──── CHECKOUT FUNNEL ────
+        $allOrders = Order::whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])->count();
+        $paidOrders = Order::where('status', '!=', 'cancelled')
+            ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->count();
+        $completedOrders = Order::where('status', 'completed')
+            ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->count();
+
+        $checkoutFunnel = [
+            'checkout_created' => $allOrders,
+            'paid' => $paidOrders,
+            'completed' => $completedOrders,
+            'paid_rate' => $allOrders > 0 ? round(($paidOrders / $allOrders) * 100, 1) : 0,
+            'completed_rate' => $paidOrders > 0 ? round(($completedOrders / $paidOrders) * 100, 1) : 0,
+        ];
+
+        // ──── REPEAT BUYERS ────
+        $repeatBuyers = Order::selectRaw('user_id, COUNT(*) as order_count, SUM(total) as total_revenue')
+            ->where('status', '!=', 'cancelled')
+            ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->whereNotNull('user_id')
+            ->groupBy('user_id')
+            ->havingRaw('COUNT(*) >= 2')
+            ->get();
+
+        $repeatBuyersData = [
+            'customer_count' => $repeatBuyers->count(),
+            'total_orders' => $repeatBuyers->sum('order_count'),
+            'total_revenue' => $repeatBuyers->sum('total_revenue'),
+            'avg_orders_per_customer' => $repeatBuyers->count() > 0 ? round($repeatBuyers->sum('order_count') / $repeatBuyers->count(), 1) : 0,
+        ];
+
+        // ──── COUPON CONVERSION ────
+        $ordersWithCoupon = Order::where('status', '!=', 'cancelled')
+            ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->whereNotNull('coupon_code')
+            ->where('coupon_code', '!=', '')
+            ->count();
+
+        $totalOrders = Order::where('status', '!=', 'cancelled')
+            ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->count();
+
+        $couponRevenue = Order::where('status', '!=', 'cancelled')
+            ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->whereNotNull('coupon_code')
+            ->where('coupon_code', '!=', '')
+            ->sum('discount_amount');
+
+        $couponConversion = [
+            'orders_with_coupon' => $ordersWithCoupon,
+            'total_orders' => $totalOrders,
+            'conversion_rate' => $totalOrders > 0 ? round(($ordersWithCoupon / $totalOrders) * 100, 1) : 0,
+            'coupon_revenue' => $couponRevenue,
+        ];
+
         return view('admin.reports-index', compact(
-            'dateFrom', 'dateTo', 'revenue', 'dailyRevenue', 'topProducts', 'statusBreakdown'
+            'dateFrom', 'dateTo', 'revenue', 'dailyRevenue', 'topProducts', 'statusBreakdown',
+            'checkoutFunnel', 'repeatBuyersData', 'couponConversion'
         ));
     }
 
@@ -89,6 +147,34 @@ class ReportController extends Controller
             ->orderBy('created_at')
             ->get();
 
+        $allOrders = Order::whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])->count();
+        $paidOrders = Order::where('status', '!=', 'cancelled')
+            ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->count();
+        $completedOrders = Order::where('status', 'completed')
+            ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->count();
+
+        $repeatBuyers = Order::selectRaw('user_id, COUNT(*) as order_count, SUM(total) as total_revenue')
+            ->where('status', '!=', 'cancelled')
+            ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->whereNotNull('user_id')
+            ->groupBy('user_id')
+            ->havingRaw('COUNT(*) >= 2')
+            ->get();
+
+        $ordersWithCoupon = Order::where('status', '!=', 'cancelled')
+            ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->whereNotNull('coupon_code')
+            ->where('coupon_code', '!=', '')
+            ->count();
+
+        $couponRevenue = Order::where('status', '!=', 'cancelled')
+            ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->whereNotNull('coupon_code')
+            ->where('coupon_code', '!=', '')
+            ->sum('discount_amount');
+
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Laporan Penjualan');
@@ -112,6 +198,10 @@ class ReportController extends Controller
             'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F0EFFF']],
             'font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => '6C63FF']],
         ];
+        $sectionHeaderStyle = [
+            'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => '1E1D2E']],
+            'font' => ['bold' => true, 'size' => 10, 'color' => ['rgb' => 'FFFFFF']],
+        ];
         $currencyFormat = '#,##0';
         $evenRowFill = [
             'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F9F9FB']],
@@ -128,18 +218,54 @@ class ReportController extends Controller
         $sheet->getStyle('A2')->applyFromArray($subtitleStyle);
         $sheet->getRowDimension(2)->setRowHeight(20);
 
-        // ── Column headers (row 4) ──
+        // ── Analytics summary ──
+        $sheet->mergeCells('A4:N4');
+        $sheet->setCellValue('A4', 'RINGKASAN ANALYTICS');
+        $sheet->getStyle('A4:N4')->applyFromArray($sectionHeaderStyle);
+
+        $paidRate = $allOrders > 0 ? round(($paidOrders / $allOrders) * 100, 1) : 0;
+        $completedRate = $paidOrders > 0 ? round(($completedOrders / $paidOrders) * 100, 1) : 0;
+        $couponConversionRate = $paidOrders > 0 ? round(($ordersWithCoupon / $paidOrders) * 100, 1) : 0;
+
+        $sheet->setCellValue('A5', 'Checkout dibuat');
+        $sheet->setCellValue('D5', $allOrders);
+        $sheet->setCellValue('A6', 'Order dibayar (non-cancelled)');
+        $sheet->setCellValue('D6', $paidOrders . ' (' . $paidRate . '%)');
+        $sheet->setCellValue('A7', 'Order selesai');
+        $sheet->setCellValue('D7', $completedOrders . ' (' . $completedRate . '%)');
+
+        $sheet->setCellValue('F5', 'Pembeli berulang (>=2 order)');
+        $sheet->setCellValue('I5', $repeatBuyers->count());
+        $sheet->setCellValue('F6', 'Total order pembeli berulang');
+        $sheet->setCellValue('I6', (int) $repeatBuyers->sum('order_count'));
+        $sheet->setCellValue('F7', 'Revenue pembeli berulang');
+        $sheet->setCellValue('I7', (int) $repeatBuyers->sum('total_revenue'));
+        $sheet->getStyle('I7')->getNumberFormat()->setFormatCode($currencyFormat);
+
+        $sheet->setCellValue('K5', 'Order pakai kupon');
+        $sheet->setCellValue('N5', $ordersWithCoupon);
+        $sheet->setCellValue('K6', 'Conversion kupon');
+        $sheet->setCellValue('N6', $couponConversionRate . '%');
+        $sheet->setCellValue('K7', 'Total diskon kupon');
+        $sheet->setCellValue('N7', (int) $couponRevenue);
+        $sheet->getStyle('N7')->getNumberFormat()->setFormatCode($currencyFormat);
+
+        $sheet->getStyle('A5:N7')->getFont()->setSize(10);
+        $sheet->getStyle('A5:N7')->getAlignment()->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER);
+        $sheet->getStyle('A5:N7')->applyFromArray($borderAll);
+
+        // ── Column headers ──
         $columns = ['A' => 'No', 'B' => 'No Order', 'C' => 'Tanggal', 'D' => 'Customer', 'E' => 'Telepon', 'F' => 'Email', 'G' => 'Produk', 'H' => 'Qty', 'I' => 'Subtotal (Rp)', 'J' => 'Diskon (Rp)', 'K' => 'Kupon', 'L' => 'Total (Rp)', 'M' => 'Pembayaran', 'N' => 'Status'];
 
-        $row = 4;
+        $row = 9;
         foreach ($columns as $col => $label) {
             $sheet->setCellValue($col . $row, $label);
         }
-        $sheet->getStyle('A4:N4')->applyFromArray($headerFill);
-        $sheet->getRowDimension(4)->setRowHeight(28);
+        $sheet->getStyle('A9:N9')->applyFromArray($headerFill);
+        $sheet->getRowDimension(9)->setRowHeight(28);
 
         // ── Data rows ──
-        $row = 5;
+        $row = 10;
         $no = 1;
         $grandSubtotal = 0;
         $grandDiscount = 0;
@@ -230,8 +356,8 @@ class ReportController extends Controller
 
         // ── Borders for all data ──
         $lastDataRow = $row - 1;
-        if ($lastDataRow >= 5) {
-            $sheet->getStyle("A4:N{$lastDataRow}")->applyFromArray($borderAll);
+        if ($lastDataRow >= 10) {
+            $sheet->getStyle("A9:N{$lastDataRow}")->applyFromArray($borderAll);
         }
         $sheet->getStyle("A{$totalRow}:N{$totalRow}")->applyFromArray($borderAll);
 
@@ -242,7 +368,7 @@ class ReportController extends Controller
         }
 
         // ── Freeze pane below header ──
-        $sheet->freezePane('A5');
+        $sheet->freezePane('A10');
 
         // ── Output ──
         $filename = "Laporan-Penjualan-{$dateFrom}-sd-{$dateTo}.xlsx";
