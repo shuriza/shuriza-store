@@ -119,6 +119,39 @@ class Product extends Model
         return $query->where('is_popular', true);
     }
 
+    /**
+     * Products that are both active AND in stock (ready to sell)
+     */
+    public function scopeVisible($query)
+    {
+        return $query->where('is_active', true)->where('stock', '>', 0);
+    }
+
+    /**
+     * Products currently on sale (has discount or flash sale)
+     */
+    public function scopeOnSale($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNotNull('original_price')
+              ->whereColumn('price', '<', 'original_price');
+        })->orWhere(function ($q) {
+            $q->whereNotNull('flash_sale_price')
+              ->where('flash_sale_start', '<=', now())
+              ->where('flash_sale_end', '>=', now());
+        });
+    }
+
+    /**
+     * Products trending by views and popularity
+     */
+    public function scopeTrending($query)
+    {
+        return $query->orderByDesc('views')
+                     ->orderByDesc('is_popular')
+                     ->orderByDesc('created_at');
+    }
+
     public function scopeByCategory($query, $categorySlug)
     {
         return $query->whereHas('category', function ($q) use ($categorySlug) {

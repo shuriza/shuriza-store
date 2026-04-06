@@ -225,6 +225,8 @@
                                         {{ $product->badge_label }}
                                     </span>
                                 @endif
+                                {{-- Wishlist Button --}}
+                                <x-wishlist-button :product="$product" class="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/80 dark:bg-gray-800/80 text-gray-400 hover:text-red-500 hover:bg-white dark:hover:bg-gray-800 flex items-center justify-center text-sm backdrop-blur-sm" />
                             </div>
 
                             {{-- Info --}}

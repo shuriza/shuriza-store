@@ -27,4 +27,14 @@ class Review extends Model
     {
         return $query->where('is_approved', true);
     }
+
+    public function scopePending($query)
+    {
+        return $query->where('is_approved', false);
+    }
+
+    public function scopeLatest($query)
+    {
+        return $query->orderByDesc('created_at');
+    }
 }

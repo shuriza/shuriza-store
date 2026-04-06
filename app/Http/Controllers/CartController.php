@@ -74,6 +74,10 @@ class CartController extends Controller
 
         $cartItem->fill($condition);
         $cartItem->quantity = $newQty;
+        // Simpan price snapshot saat item baru ditambahkan
+        if (!$cartItem->exists || $cartItem->price_snapshot === null) {
+            $cartItem->price_snapshot = $product->effective_price;
+        }
         $cartItem->save();
 
         if ($request->expectsJson()) {
@@ -174,16 +178,17 @@ class CartController extends Controller
     {
         $items = $this->getCartQuery()->get()->map(function ($item) {
             $product = $item->product;
+            $effectivePrice = $item->effective_price; // Gunakan accessor yang sudah mempertimbangkan price_snapshot
             return [
                 'id'       => $item->id,
                 'quantity' => $item->quantity,
-                'subtotal' => $item->quantity * ($product?->effective_price ?? 0),
+                'subtotal' => $item->quantity * $effectivePrice,
                 'product'  => $product ? [
                     'id'    => $product->id,
                     'name'  => $product->name,
                     'slug'  => $product->slug,
-                    'price' => $product->effective_price,
-                    'formatted_price' => $product->formatted_effective_price,
+                    'price' => $effectivePrice,
+                    'formatted_price' => $item->formatted_effective_price,
                     'image_url' => $product->image_url,
                     'stock' => $product->stock,
                 ] : null,
@@ -244,7 +249,7 @@ class CartController extends Controller
     private function getCartTotal(): string
     {
         $items = $this->getCartQuery()->get();
-        $total = $items->sum(fn($item) => $item->quantity * ($item->product?->effective_price ?? 0));
+        $total = $items->sum(fn($item) => $item->subtotal); // Gunakan subtotal accessor
         return 'Rp ' . number_format($total, 0, ',', '.');
     }
 

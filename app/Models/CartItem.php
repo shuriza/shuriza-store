@@ -12,10 +12,12 @@ class CartItem extends Model
         'session_id',
         'product_id',
         'quantity',
+        'price_snapshot',
     ];
 
     protected $casts = [
         'quantity' => 'integer',
+        'price_snapshot' => 'integer',
     ];
 
     public function user(): BelongsTo
@@ -30,7 +32,25 @@ class CartItem extends Model
 
     public function getSubtotalAttribute(): int
     {
-        return $this->quantity * ($this->product ? $this->product->price : 0);
+        // Gunakan price_snapshot jika ada, jika tidak gunakan harga produk saat ini
+        $price = $this->price_snapshot ?? ($this->product ? $this->product->effective_price : 0);
+        return $this->quantity * $price;
+    }
+
+    /**
+     * Harga efektif item ini (snapshot atau current price)
+     */
+    public function getEffectivePriceAttribute(): int
+    {
+        return $this->price_snapshot ?? ($this->product ? $this->product->effective_price : 0);
+    }
+
+    /**
+     * Format harga efektif
+     */
+    public function getFormattedEffectivePriceAttribute(): string
+    {
+        return 'Rp ' . number_format($this->effective_price, 0, ',', '.');
     }
 
     public function scopeForUser($query, $userId)
