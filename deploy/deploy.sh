@@ -9,7 +9,7 @@ set -e
 APP_DIR="/var/www/shuriza-store"
 REPO_URL="https://github.com/shuriza/shuriza-store.git"
 BRANCH="main"
-DOMAIN="yourdomain.com"  # Ganti dengan domain Anda
+DOMAIN="shurizastore.my.id"  # Ganti dengan domain Anda
 
 # Database config
 DB_NAME="shuriza_store"
@@ -58,16 +58,24 @@ echo "⚙️ Updating .env for production..."
 sed -i "s|APP_ENV=.*|APP_ENV=production|" .env
 sed -i "s|APP_DEBUG=.*|APP_DEBUG=false|" .env
 sed -i "s|APP_URL=.*|APP_URL=https://$DOMAIN|" .env
-sed -i "s|DB_CONNECTION=.*|DB_CONNECTION=mysql|" .env
-sed -i "s|DB_HOST=.*|DB_HOST=127.0.0.1|" .env
-sed -i "s|DB_PORT=.*|DB_PORT=3306|" .env
-sed -i "s|DB_DATABASE=.*|DB_DATABASE=$DB_NAME|" .env
-sed -i "s|DB_USERNAME=.*|DB_USERNAME=$DB_USER|" .env
-sed -i "s|DB_PASSWORD=.*|DB_PASSWORD=$DB_PASS|" .env
+sed -i "s|DB_CONNECTION=.*|DB_CONNECTION=sqlite|" .env
+# Remove MySQL credentials (not needed for SQLite)
+sed -i "/DB_HOST=/d" .env
+sed -i "/DB_PORT=/d" .env
+sed -i "/DB_DATABASE=/d" .env
+sed -i "/DB_USERNAME=/d" .env
+sed -i "/DB_PASSWORD=/d" .env
+
+
+# Create SQLite database file if not exists
+echo "🗄️ Creating SQLite database..."
+touch storage/app/database.sqlite
+chmod 666 storage/app/database.sqlite
 
 # Run migrations
 echo "🗄️ Running migrations..."
-php artisan migrate --force
+php artisan migrate --force || true
+
 
 # Cache configuration
 echo "⚡ Caching configuration..."
