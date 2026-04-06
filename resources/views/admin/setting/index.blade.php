@@ -95,15 +95,15 @@
                                         <select name="{{ $setting['key'] }}" id="{{ $setting['key'] }}"
                                                 class="w-full rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 text-sm text-white focus:border-peri focus:outline-none focus:ring-1 focus:ring-peri">
                                             <option value="midtrans" {{ $setting['value'] === 'midtrans' ? 'selected' : '' }}>🏦 Midtrans (QRIS, E-Wallet, Bank Transfer)</option>
-                                            <option value="xendit" {{ $setting['value'] === 'xendit' ? 'selected' : '' }}>💳 Xendit (Segera Hadir)</option>
+                                            <option value="xendit" {{ $setting['value'] === 'xendit' ? 'selected' : '' }}>💳 Xendit (Invoice, VA, E-Wallet)</option>
                                         </select>
-                                        <p class="mt-1 text-xs text-gray-500">Pilih provider pembayaran. Xendit akan tersedia di update mendatang.</p>
-                                    @elseif($setting['key'] === 'midtrans_server_key')
+                                        <p class="mt-1 text-xs text-gray-500">Pilih provider pembayaran.</p>
+                                    @elseif($setting['key'] === 'midtrans_server_key' || $setting['key'] === 'xendit_secret_key')
                                         <input type="password" name="{{ $setting['key'] }}" id="{{ $setting['key'] }}"
                                                value="{{ old($setting['key'], $setting['value']) }}"
-                                               placeholder="Mid-server-xxxx"
+                                               placeholder="{{ $setting['key'] === 'midtrans_server_key' ? 'Mid-server-xxxx' : 'xnd_development_xxxx' }}"
                                                class="w-full rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-peri focus:outline-none focus:ring-1 focus:ring-peri">
-                                        <p class="mt-1 text-xs text-red-400"><i class="fas fa-lock mr-1"></i>Server Key bersifat rahasia. Jangan bagikan ke siapapun.</p>
+                                        <p class="mt-1 text-xs text-red-400"><i class="fas fa-lock mr-1"></i>Key ini bersifat rahasia. Jangan bagikan ke siapapun.</p>
                                     @else
                                         <input type="{{ $setting['key'] === 'store_email' ? 'email' : 'text' }}"
                                                name="{{ $setting['key'] }}" id="{{ $setting['key'] }}"
@@ -129,6 +129,8 @@
                                         <p class="mt-1 text-xs text-gray-500">Dapatkan di dashboard.midtrans.com → Settings → Access Keys</p>
                                     @elseif($setting['key'] === 'midtrans_client_key')
                                         <p class="mt-1 text-xs text-gray-500">Client key untuk integrasi frontend (Snap.js)</p>
+                                    @elseif($setting['key'] === 'xendit_callback_token')
+                                        <p class="mt-1 text-xs text-gray-500">Dapatkan di dashboard.xendit.co → Settings → Callbacks</p>
                                     @endif
                                 @endif
                             </div>
