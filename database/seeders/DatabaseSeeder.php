@@ -102,6 +102,15 @@ class DatabaseSeeder extends Seeder
                     "Voucher belanja, pulsa, dan layanan digital lainnya.",
                 "sort_order" => 7,
             ],
+            [
+                "name" => "AI Tools",
+                "slug" => "ai-tools",
+                "icon" => "fas fa-robot",
+                "color" => "#10b981",
+                "description" =>
+                    "Layanan AI premium seperti ChatGPT, Claude, Midjourney, dan lainnya.",
+                "sort_order" => 8,
+            ],
         ];
 
         $createdCategories = [];
@@ -426,6 +435,128 @@ class DatabaseSeeder extends Seeder
                 "badge" => null,
                 "is_popular" => false,
                 "sort_order" => 2,
+            ],
+
+            // ── AI Tools ───────────────────────────────────────────────────────
+            [
+                "category" => "ai-tools",
+                "name" => "ChatGPT Plus 1 Bulan",
+                "slug" => "chatgpt-plus-1-bulan",
+                "short_description" =>
+                    "Akses ChatGPT Plus dengan GPT-4o, lebih cepat & fitur premium.",
+                "description" =>
+                    "ChatGPT Plus 1 Bulan\n\n✅ Akses GPT-4o (model terbaru)\n✅ Lebih cepat dari versi gratis\n✅ Prioritas akses saat ramai\n✅ Fitur DALL-E (generate gambar)\n✅ Fitur Code Interpreter\n✅ Plugin & GPTs custom\n✅ Garansi full 1 bulan\n\nPengiriman: Detail akun via WhatsApp/Email",
+                "price" => 50000,
+                "original_price" => 85000,
+                "stock" => 50,
+                "badge" => "hot",
+                "is_popular" => true,
+                "sort_order" => 1,
+            ],
+            [
+                "category" => "ai-tools",
+                "name" => "Claude Pro 1 Bulan",
+                "slug" => "claude-pro-1-bulan",
+                "short_description" =>
+                    "Akses Claude Pro dari Anthropic, AI percakapan terbaik.",
+                "description" =>
+                    "Claude Pro 1 Bulan\n\n✅ Akses Claude 3.5 Sonnet\n✅ 5x lebih banyak pesan\n✅ Prioritas akses saat sibuk\n✅ Fitur Projects & Artifacts\n✅ Upload file PDF, dokumen\n✅ Analisis gambar\n✅ Garansi full 1 bulan\n\nPengiriman: Detail akun via WhatsApp/Email",
+                "price" => 55000,
+                "original_price" => 95000,
+                "stock" => 30,
+                "badge" => "new",
+                "is_popular" => true,
+                "sort_order" => 2,
+            ],
+            [
+                "category" => "ai-tools",
+                "name" => "Midjourney Basic 1 Bulan",
+                "slug" => "midjourney-basic-1-bulan",
+                "short_description" =>
+                    "Generate gambar AI dengan Midjourney Basic plan.",
+                "description" =>
+                    "Midjourney Basic 1 Bulan\n\n✅ ~200 generasi gambar/bulan\n✅ Akses fitur terbaru V6\n✅ Fast GPU time 3.3 jam\n✅ Unlimited Relax mode\n✅ Akses Discord Midjourney\n✅ Garansi full 1 bulan\n\nPengiriman: Invite Discord via WhatsApp",
+                "price" => 65000,
+                "original_price" => 120000,
+                "stock" => 20,
+                "badge" => "hot",
+                "is_popular" => true,
+                "sort_order" => 3,
+            ],
+            [
+                "category" => "ai-tools",
+                "name" => "GitHub Copilot 1 Bulan",
+                "slug" => "github-copilot-1-bulan",
+                "short_description" =>
+                    "AI coding assistant untuk programmer, support semua IDE.",
+                "description" =>
+                    "GitHub Copilot Individual 1 Bulan\n\n✅ AI autocomplete code\n✅ Support VS Code, JetBrains, Neovim\n✅ Chat dengan Copilot\n✅ Multi-language support\n✅ Code explanation & fix\n✅ Garansi full 1 bulan\n\nPengiriman: Akses via GitHub invite",
+                "price" => 45000,
+                "original_price" => 75000,
+                "stock" => 40,
+                "badge" => "sale",
+                "is_popular" => false,
+                "sort_order" => 4,
+            ],
+            [
+                "category" => "ai-tools",
+                "name" => "Grammarly Premium 1 Bulan",
+                "slug" => "grammarly-premium-1-bulan",
+                "short_description" =>
+                    "AI writing assistant untuk grammar, style, dan plagiarism check.",
+                "description" =>
+                    "Grammarly Premium 1 Bulan\n\n✅ Advanced grammar & spelling\n✅ Style & tone suggestions\n✅ Plagiarism checker\n✅ Word choice improvements\n✅ Browser extension + desktop app\n✅ Garansi full 1 bulan",
+                "price" => 35000,
+                "original_price" => 60000,
+                "stock" => 35,
+                "badge" => "sale",
+                "is_popular" => false,
+                "sort_order" => 5,
+            ],
+            [
+                "category" => "ai-tools",
+                "name" => "Perplexity Pro 1 Bulan",
+                "slug" => "perplexity-pro-1-bulan",
+                "short_description" =>
+                    "AI search engine premium dengan sumber akurat dan GPT-4.",
+                "description" =>
+                    "Perplexity Pro 1 Bulan\n\n✅ Unlimited Pro searches\n✅ Akses GPT-4o & Claude\n✅ File upload & analysis\n✅ Sumber referensi terpercaya\n✅ API access\n✅ Garansi full 1 bulan\n\nPengiriman: Detail akun via WhatsApp/Email",
+                "price" => 50000,
+                "original_price" => 90000,
+                "stock" => 25,
+                "badge" => "new",
+                "is_popular" => false,
+                "sort_order" => 6,
+            ],
+            [
+                "category" => "ai-tools",
+                "name" => "Notion AI 1 Bulan",
+                "slug" => "notion-ai-1-bulan",
+                "short_description" =>
+                    "AI writing assistant terintegrasi di Notion workspace.",
+                "description" =>
+                    "Notion AI Add-on 1 Bulan\n\n✅ AI writing & summarization\n✅ Brainstorm & ideation\n✅ Fix spelling & grammar\n✅ Translate to any language\n✅ Terintegrasi di Notion\n✅ Garansi full 1 bulan\n\nNote: Memerlukan akun Notion (Plus/Team recommended)",
+                "price" => 40000,
+                "original_price" => 70000,
+                "stock" => 30,
+                "badge" => null,
+                "is_popular" => false,
+                "sort_order" => 7,
+            ],
+            [
+                "category" => "ai-tools",
+                "name" => "Runway ML Standard 1 Bulan",
+                "slug" => "runway-ml-standard-1-bulan",
+                "short_description" =>
+                    "AI video generator untuk create video dari text/image.",
+                "description" =>
+                    "Runway ML Standard 1 Bulan\n\n✅ 625 credits/bulan\n✅ Gen-3 Alpha video generation\n✅ Text to video, image to video\n✅ Video editing AI tools\n✅ Upscale & slow motion\n✅ Garansi full 1 bulan\n\nPengiriman: Detail akun via WhatsApp/Email",
+                "price" => 75000,
+                "original_price" => 130000,
+                "stock" => 15,
+                "badge" => "hot",
+                "is_popular" => false,
+                "sort_order" => 8,
             ],
         ];
 

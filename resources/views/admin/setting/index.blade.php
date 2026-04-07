@@ -184,5 +184,25 @@
             </div>
         </div>
     </div>
+
+    {{-- Payment Gateway Guide --}}
+    <div x-show="activeTab === 'payment'" x-cloak class="mt-4">
+        <div class="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5">
+            <h3 class="mb-3 text-sm font-bold text-amber-400"><i class="fas fa-exclamation-triangle mr-1"></i> Panduan Konfigurasi Midtrans</h3>
+            <ol class="space-y-2 text-xs text-gray-400 list-decimal list-inside">
+                <li>Buka <a href="https://dashboard.sandbox.midtrans.com" target="_blank" class="text-peri underline">dashboard.sandbox.midtrans.com</a> (untuk testing)</li>
+                <li>Login atau daftar akun Midtrans</li>
+                <li>Pergi ke <strong class="text-white">Settings → Access Keys</strong></li>
+                <li>Copy <strong class="text-white">Merchant ID</strong>, <strong class="text-white">Client Key</strong>, dan <strong class="text-white">Server Key</strong></li>
+                <li>Paste ke form di atas</li>
+                <li>Centang <strong class="text-white">"Aktifkan Payment Gateway"</strong></li>
+                <li><strong class="text-red-400">JANGAN</strong> centang "Mode Production" untuk testing sandbox</li>
+            </ol>
+            <div class="mt-4 rounded-lg bg-gray-800 p-3">
+                <p class="text-xs text-gray-400 mb-2"><i class="fas fa-link mr-1"></i> Notification URL (wajib diset di dashboard Midtrans):</p>
+                <code class="text-xs text-green-400 break-all">{{ url('/payment/notification') }}</code>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
