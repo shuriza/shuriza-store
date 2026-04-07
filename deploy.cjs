@@ -2,10 +2,10 @@
 /**
  * Shuriza Store - Deployment Helper Script
  * 
- * Usage:
- *   node deploy.js           - Interactive deployment
- *   node deploy.js --quick   - Quick deploy (skip confirmations)
- *   npm run deploy           - Same as node deploy.js
+ * Penggunaan:
+ *   node deploy.cjs           - Deploy interaktif
+ *   node deploy.cjs --quick   - Deploy cepat (tanpa konfirmasi)
+ *   npm run deploy            - Sama dengan node deploy.cjs
  */
 
 const { execSync, spawn } = require('child_process');
@@ -13,7 +13,7 @@ const readline = require('readline');
 const fs = require('fs');
 const path = require('path');
 
-// Configuration
+// Konfigurasi
 const CONFIG_FILE = path.join(__dirname, '.deploy-config.json');
 const DEFAULT_CONFIG = {
     host: '68.183.182.39',
@@ -22,7 +22,7 @@ const DEFAULT_CONFIG = {
     branch: 'main'
 };
 
-// Colors for terminal output
+// Warna untuk output terminal
 const colors = {
     reset: '\x1b[0m',
     bright: '\x1b[1m',
@@ -54,7 +54,7 @@ function logWarning(message) {
     console.log(`${colors.yellow}⚠${colors.reset} ${message}`);
 }
 
-// Load or create config
+// Load atau buat config
 function loadConfig() {
     try {
         if (fs.existsSync(CONFIG_FILE)) {
@@ -62,7 +62,7 @@ function loadConfig() {
             return { ...DEFAULT_CONFIG, ...saved };
         }
     } catch (e) {
-        logWarning('Could not load config, using defaults');
+        logWarning('Tidak bisa load config, pakai default');
     }
     return DEFAULT_CONFIG;
 }
@@ -70,13 +70,13 @@ function loadConfig() {
 function saveConfig(config) {
     try {
         fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
-        logSuccess('Configuration saved');
+        logSuccess('Konfigurasi tersimpan');
     } catch (e) {
-        logWarning('Could not save config');
+        logWarning('Tidak bisa simpan config');
     }
 }
 
-// Create readline interface
+// Buat readline interface
 function createRL() {
     return readline.createInterface({
         input: process.stdin,
@@ -98,7 +98,7 @@ async function confirm(rl, prompt) {
     return answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes';
 }
 
-// Check local git status
+// Cek status git lokal
 function checkGitStatus() {
     try {
         const status = execSync('git status --porcelain', { encoding: 'utf8' });
@@ -112,7 +112,7 @@ function getCurrentBranch() {
     try {
         return execSync('git branch --show-current', { encoding: 'utf8' }).trim();
     } catch (e) {
-        return 'unknown';
+        return 'tidak diketahui';
     }
 }
 
@@ -120,24 +120,24 @@ function getLastCommit() {
     try {
         return execSync('git log -1 --pretty=format:"%h - %s"', { encoding: 'utf8' }).trim();
     } catch (e) {
-        return 'unknown';
+        return 'tidak diketahui';
     }
 }
 
-// Push local changes
+// Push perubahan lokal
 function pushChanges(branch, targetBranch) {
-    logStep('PUSH', `Pushing ${branch} to ${targetBranch}...`);
+    logStep('PUSH', `Mendorong ${branch} ke ${targetBranch}...`);
     try {
         execSync(`git push origin ${branch}:${targetBranch}`, { stdio: 'inherit' });
-        logSuccess('Changes pushed successfully');
+        logSuccess('Perubahan berhasil di-push');
         return true;
     } catch (e) {
-        logError('Failed to push changes');
+        logError('Gagal push perubahan');
         return false;
     }
 }
 
-// Generate SSH commands
+// Generate perintah SSH
 function generateDeployCommands(config, options = {}) {
     const commands = [];
     
@@ -177,22 +177,22 @@ function generateDeployCommands(config, options = {}) {
     return commands;
 }
 
-// Execute SSH deployment
+// Jalankan deployment SSH
 function executeSSH(config, commands) {
     const commandString = commands.join(' && ');
     const sshCommand = `ssh ${config.user}@${config.host} "${commandString}"`;
     
-    log('\n📋 Commands to execute:', 'cyan');
+    log('\n📋 Perintah yang akan dijalankan:', 'cyan');
     commands.forEach((cmd, i) => {
         console.log(`   ${colors.bright}${i + 1}.${colors.reset} ${cmd}`);
     });
     console.log('');
     
-    logStep('SSH', `Connecting to ${config.user}@${config.host}...`);
-    log('(Enter your SSH password when prompted)\n', 'yellow');
+    logStep('SSH', `Menghubungkan ke ${config.user}@${config.host}...`);
+    log('(Masukkan password SSH saat diminta)\n', 'yellow');
     
     try {
-        // Use spawn for interactive SSH (password input)
+        // Pakai spawn untuk SSH interaktif (input password)
         const ssh = spawn('ssh', [
             `${config.user}@${config.host}`,
             commandString
@@ -204,26 +204,26 @@ function executeSSH(config, commands) {
         return new Promise((resolve) => {
             ssh.on('close', (code) => {
                 if (code === 0) {
-                    logSuccess('Deployment completed successfully!');
+                    logSuccess('Deployment berhasil!');
                     resolve(true);
                 } else {
-                    logError(`Deployment failed with code ${code}`);
+                    logError(`Deployment gagal dengan kode ${code}`);
                     resolve(false);
                 }
             });
             
             ssh.on('error', (err) => {
-                logError(`SSH error: ${err.message}`);
+                logError(`Error SSH: ${err.message}`);
                 resolve(false);
             });
         });
     } catch (e) {
-        logError(`Failed to connect: ${e.message}`);
+        logError(`Gagal menghubungkan: ${e.message}`);
         return false;
     }
 }
 
-// Copy command to clipboard (Windows)
+// Copy perintah ke clipboard (Windows)
 function copyToClipboard(text) {
     try {
         execSync(`echo ${text} | clip`, { shell: true });
@@ -233,7 +233,7 @@ function copyToClipboard(text) {
     }
 }
 
-// Main deployment flow
+// Alur deployment utama
 async function main() {
     const args = process.argv.slice(2);
     const quickMode = args.includes('--quick') || args.includes('-q');
@@ -241,7 +241,7 @@ async function main() {
     
     console.log('');
     log('╔════════════════════════════════════════════╗', 'cyan');
-    log('║     🚀 Shuriza Store Deployment Helper     ║', 'cyan');
+    log('║     🚀 Shuriza Store - Deploy ke Server    ║', 'cyan');
     log('╚════════════════════════════════════════════╝', 'cyan');
     console.log('');
     
@@ -249,43 +249,43 @@ async function main() {
     const rl = createRL();
     
     try {
-        // Show current git status
+        // Tampilkan status git saat ini
         const currentBranch = getCurrentBranch();
         const lastCommit = getLastCommit();
         const isClean = checkGitStatus();
         
-        log('📊 Local Repository Status:', 'bright');
+        log('📊 Status Repository Lokal:', 'bright');
         console.log(`   Branch: ${colors.cyan}${currentBranch}${colors.reset}`);
-        console.log(`   Last commit: ${colors.green}${lastCommit}${colors.reset}`);
-        console.log(`   Working tree: ${isClean ? colors.green + 'Clean ✓' : colors.yellow + 'Has uncommitted changes ⚠'}${colors.reset}`);
+        console.log(`   Commit terakhir: ${colors.green}${lastCommit}${colors.reset}`);
+        console.log(`   Working tree: ${isClean ? colors.green + 'Bersih ✓' : colors.yellow + 'Ada perubahan belum di-commit ⚠'}${colors.reset}`);
         console.log('');
         
         if (!isClean && !quickMode) {
-            logWarning('You have uncommitted changes!');
-            const proceed = await confirm(rl, 'Continue anyway?');
+            logWarning('Ada perubahan yang belum di-commit!');
+            const proceed = await confirm(rl, 'Lanjutkan saja?');
             if (!proceed) {
-                log('\nDeployment cancelled. Commit your changes first.', 'yellow');
+                log('\nDeployment dibatalkan. Commit dulu perubahanmu.', 'yellow');
                 rl.close();
                 return;
             }
         }
         
-        // Configure server
+        // Konfigurasi server
         if (!quickMode) {
-            log('⚙️  Server Configuration:', 'bright');
-            config.host = await question(rl, 'Server IP/hostname', config.host);
-            config.user = await question(rl, 'SSH username', config.user);
-            config.path = await question(rl, 'Project path on server', config.path);
-            config.branch = await question(rl, 'Branch to deploy', config.branch);
+            log('⚙️  Konfigurasi Server:', 'bright');
+            config.host = await question(rl, 'IP/hostname server', config.host);
+            config.user = await question(rl, 'Username SSH', config.user);
+            config.path = await question(rl, 'Path project di server', config.path);
+            config.branch = await question(rl, 'Branch untuk deploy', config.branch);
             
-            const saveIt = await confirm(rl, 'Save this configuration for next time?');
+            const saveIt = await confirm(rl, 'Simpan konfigurasi ini untuk lain kali?');
             if (saveIt) {
                 saveConfig(config);
             }
             console.log('');
         }
         
-        // Deployment options
+        // Opsi deployment
         let options = {
             migrate: true,
             seed: false,
@@ -296,43 +296,43 @@ async function main() {
         };
         
         if (!quickMode) {
-            log('📦 Deployment Options:', 'bright');
-            options.migrate = await confirm(rl, 'Run database migrations?');
-            options.seed = await confirm(rl, 'Run database seeders?');
-            options.clearCache = await confirm(rl, 'Clear all caches?');
-            options.optimize = await confirm(rl, 'Optimize (cache config/routes)?');
-            options.npm = await confirm(rl, 'Run npm install & build?');
-            options.composer = await confirm(rl, 'Run composer install?');
+            log('📦 Opsi Deployment:', 'bright');
+            options.migrate = await confirm(rl, 'Jalankan migrasi database?');
+            options.seed = await confirm(rl, 'Jalankan seeder database?');
+            options.clearCache = await confirm(rl, 'Hapus semua cache?');
+            options.optimize = await confirm(rl, 'Optimasi (cache config/routes)?');
+            options.npm = await confirm(rl, 'Jalankan npm install & build?');
+            options.composer = await confirm(rl, 'Jalankan composer install?');
             console.log('');
         }
         
-        // Generate commands
+        // Generate perintah
         const commands = generateDeployCommands(config, options);
         
-        // Copy mode - just show commands
+        // Mode copy - hanya tampilkan perintah
         if (copyMode) {
             const fullCommand = `ssh ${config.user}@${config.host}\n\n${commands.join('\n')}`;
-            log('📋 Commands to run on server:', 'bright');
+            log('📋 Perintah untuk dijalankan di server:', 'bright');
             console.log('');
             commands.forEach(cmd => console.log(`   ${cmd}`));
             console.log('');
             
             const copyCmd = commands.join(' && ');
             if (copyToClipboard(copyCmd)) {
-                logSuccess('Commands copied to clipboard!');
+                logSuccess('Perintah sudah di-copy ke clipboard!');
             }
             
-            log(`\n💡 Or SSH directly: ssh ${config.user}@${config.host}`, 'cyan');
+            log(`\n💡 Atau SSH langsung: ssh ${config.user}@${config.host}`, 'cyan');
             rl.close();
             return;
         }
         
-        // Push changes first?
+        // Push perubahan dulu?
         if (!quickMode && currentBranch !== config.branch) {
-            const shouldPush = await confirm(rl, `Push ${currentBranch} to ${config.branch} before deploying?`);
+            const shouldPush = await confirm(rl, `Push ${currentBranch} ke ${config.branch} sebelum deploy?`);
             if (shouldPush) {
                 if (!pushChanges(currentBranch, config.branch)) {
-                    const continueAnyway = await confirm(rl, 'Push failed. Continue with deployment anyway?');
+                    const continueAnyway = await confirm(rl, 'Push gagal. Lanjutkan deployment saja?');
                     if (!continueAnyway) {
                         rl.close();
                         return;
@@ -341,18 +341,18 @@ async function main() {
             }
         }
         
-        // Final confirmation
+        // Konfirmasi akhir
         if (!quickMode) {
             console.log('');
-            log('⚠️  Ready to deploy to server:', 'yellow');
+            log('⚠️  Siap deploy ke server:', 'yellow');
             console.log(`   Server: ${colors.cyan}${config.user}@${config.host}${colors.reset}`);
             console.log(`   Path: ${colors.cyan}${config.path}${colors.reset}`);
             console.log(`   Branch: ${colors.cyan}${config.branch}${colors.reset}`);
             console.log('');
             
-            const finalConfirm = await confirm(rl, 'Proceed with deployment?');
+            const finalConfirm = await confirm(rl, 'Lanjutkan deployment?');
             if (!finalConfirm) {
-                log('\nDeployment cancelled.', 'yellow');
+                log('\nDeployment dibatalkan.', 'yellow');
                 rl.close();
                 return;
             }
@@ -360,13 +360,13 @@ async function main() {
         
         rl.close();
         
-        // Execute deployment
+        // Jalankan deployment
         console.log('');
         await executeSSH(config, commands);
         
         console.log('');
         log('═══════════════════════════════════════', 'cyan');
-        log('  Deployment process finished!', 'green');
+        log('  Proses deployment selesai!', 'green');
         log('═══════════════════════════════════════', 'cyan');
         console.log('');
         
@@ -376,25 +376,25 @@ async function main() {
     }
 }
 
-// Show help
+// Tampilkan bantuan
 if (process.argv.includes('--help') || process.argv.includes('-h')) {
     console.log(`
-${colors.cyan}Shuriza Store Deployment Helper${colors.reset}
+${colors.cyan}Shuriza Store - Deploy Helper${colors.reset}
 
-${colors.bright}Usage:${colors.reset}
-  node deploy.js           Interactive deployment wizard
-  node deploy.js --quick   Quick deploy with saved config
-  node deploy.js --copy    Just show/copy commands (no SSH)
-  npm run deploy           Same as node deploy.js
+${colors.bright}Penggunaan:${colors.reset}
+  node deploy.cjs           Deploy interaktif (wizard)
+  node deploy.cjs --quick   Deploy cepat pakai config tersimpan
+  node deploy.cjs --copy    Tampilkan/copy perintah (tanpa SSH)
+  npm run deploy            Sama dengan node deploy.cjs
 
-${colors.bright}Options:${colors.reset}
-  -q, --quick    Skip confirmations, use saved config
-  -c, --copy     Copy commands to clipboard instead of running
-  -h, --help     Show this help message
+${colors.bright}Opsi:${colors.reset}
+  -q, --quick    Lewati konfirmasi, pakai config tersimpan
+  -c, --copy     Copy perintah ke clipboard, tidak jalankan SSH
+  -h, --help     Tampilkan bantuan ini
 
-${colors.bright}Saved Config:${colors.reset}
-  Configuration is saved to .deploy-config.json
-  (This file is gitignored for security)
+${colors.bright}Config Tersimpan:${colors.reset}
+  Konfigurasi disimpan di .deploy-config.json
+  (File ini sudah di-gitignore untuk keamanan)
 `);
     process.exit(0);
 }
