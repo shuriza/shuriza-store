@@ -4,7 +4,10 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "deploy": "node deploy.cjs",
+        "deploy:quick": "node deploy.cjs --quick",
+        "deploy:copy": "node deploy.cjs --copy"
     },
     "devDependencies": {
         "@tailwindcss/forms": "^0.5.2",
