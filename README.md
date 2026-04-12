@@ -100,7 +100,9 @@ Shuriza Store telah dipersiapkan *(scaffolded)* untuk mendukung gateway pembayar
 ---
 
 ## 📑 Lisensi (License)
-Proyek Shuriza Store dibuat secara internal eksklusif. Dilarang menggandakan repositori atau menjual source code ini tanpa izin dari kreator asli.
+Source code project Shuriza Store ini terbuka untuk keperluan **belajar, edukasi, dan penggunaan pribadi**. 
+
+**PERINGATAN KERAS:** Dilarang keras untuk memperjualbelikan (resell) source code atau project ini dalam bentuk apapun tanpa izin tertulis dari kreator asli.
 
 *Built with ❤️ in Kediri.*<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
