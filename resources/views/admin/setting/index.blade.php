@@ -91,6 +91,19 @@
                                             <option value="closed" {{ $setting['value'] === 'closed' ? 'selected' : '' }}>🔴 Tutup</option>
                                             <option value="maintenance" {{ $setting['value'] === 'maintenance' ? 'selected' : '' }}>🟡 Maintenance</option>
                                         </select>
+                                    @elseif($setting['key'] === 'review_display_mode')
+                                        <select name="{{ $setting['key'] }}" id="{{ $setting['key'] }}"
+                                                class="w-full rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 text-sm text-white focus:border-peri focus:outline-none focus:ring-1 focus:ring-peri">
+                                            <option value="name" {{ $setting['value'] === 'name' ? 'selected' : '' }}>Nama User</option>
+                                            <option value="phone" {{ $setting['value'] === 'phone' ? 'selected' : '' }}>Nomor WA (disensor)</option>
+                                            <option value="anonymous" {{ $setting['value'] === 'anonymous' ? 'selected' : '' }}>Anonim ("Pelanggan")</option>
+                                        </select>
+                                        <p class="mt-1 text-xs text-gray-500">Pilih bagaimana nama reviewer ditampilkan di halaman produk dan homepage.</p>
+                                        <div class="mt-2 rounded-lg bg-gray-800 px-3 py-2 text-xs text-gray-400">
+                                            <p><strong class="text-gray-300">Nama User:</strong> Tampilkan nama akun, misal "Andi Surya"</p>
+                                            <p class="mt-1"><strong class="text-gray-300">Nomor WA:</strong> Tampilkan nomor disensor, misal "0817****3906"</p>
+                                            <p class="mt-1"><strong class="text-gray-300">Anonim:</strong> Tampilkan "Pelanggan" untuk semua reviewer</p>
+                                        </div>
                                     @elseif($setting['key'] === 'payment_gateway_provider')
                                         <select name="{{ $setting['key'] }}" id="{{ $setting['key'] }}"
                                                 class="w-full rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 text-sm text-white focus:border-peri focus:outline-none focus:ring-1 focus:ring-peri">

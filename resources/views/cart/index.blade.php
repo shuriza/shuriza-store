@@ -90,24 +90,26 @@
 
                         {{-- Qty + Subtotal + Remove --}}
                         <div class="flex items-center gap-4 sm:gap-6 flex-wrap sm:flex-nowrap">
-                            {{-- Quantity Control --}}
-                            <form method="POST" action="{{ route('cart.update', $item->id) }}" class="flex items-center gap-1.5" x-data="{ qty: {{ $item->quantity }} }">
-                                @csrf @method('PATCH')
-                                <input type="hidden" name="quantity" :value="qty">
-                                <button type="button" @click="qty = Math.max(1, qty - 1); $el.closest('form').submit()"
+                            {{-- Quantity Control (AJAX) --}}
+                            <div class="flex items-center gap-1.5" x-data="cartQty({{ $item->id }}, {{ $item->quantity }}, {{ $product->stock }}, {{ $product->effective_price }})">
+                                <button type="button" @click="decrement()"
                                         class="h-8 w-8 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 flex items-center justify-center text-xs hover:bg-peri hover:text-white transition disabled:opacity-40"
-                                        :disabled="qty <= 1">
+                                        :disabled="qty <= 1 || loading">
                                     <i class="fas fa-minus"></i>
                                 </button>
                                 <span class="w-9 text-center text-sm font-semibold text-gray-900 dark:text-white select-none" x-text="qty">{{ $item->quantity }}</span>
-                                <button type="button" @click="qty++; $el.closest('form').submit()"
-                                        class="h-8 w-8 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 flex items-center justify-center text-xs hover:bg-peri hover:text-white transition">
+                                <button type="button" @click="increment()"
+                                        class="h-8 w-8 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 flex items-center justify-center text-xs hover:bg-peri hover:text-white transition disabled:opacity-40"
+                                        :disabled="qty >= maxStock || loading">
                                     <i class="fas fa-plus"></i>
                                 </button>
-                            </form>
+                            </div>
 
                             {{-- Line Total --}}
-                            <span class="min-w-[100px] text-right text-sm font-bold text-gray-900 dark:text-white">
+                            <span class="min-w-[100px] text-right text-sm font-bold text-gray-900 dark:text-white"
+                                  x-data="{ lineTotal: {{ $subtotal }} }"
+                                  x-text="'Rp ' + new Intl.NumberFormat('id-ID').format(lineTotal)"
+                                  @cart-qty-updated.window="if ($event.detail.itemId == {{ $item->id }}) lineTotal = $event.detail.subtotal">
                                 Rp {{ number_format($subtotal, 0, ',', '.') }}
                             </span>
 
@@ -142,7 +144,7 @@
                     {{-- Total --}}
                     <div class="flex justify-between items-center">
                         <span class="font-bold text-gray-900 dark:text-white">Total</span>
-                        <span class="text-lg font-extrabold text-peri">Rp {{ number_format($total, 0, ',', '.') }}</span>
+                        <span class="text-lg font-extrabold text-peri" data-cart-grand-total>Rp {{ number_format($total, 0, ',', '.') }}</span>
                     </div>
 
                     {{-- Checkout --}}
@@ -164,3 +166,58 @@
 
 </div>
 @endsection
+
+@push('scripts')
+<script>
+function cartQty(itemId, initialQty, stock, unitPrice) {
+    return {
+        qty: initialQty,
+        maxStock: stock > 0 ? stock : 99,
+        loading: false,
+        async updateQty() {
+            this.loading = true;
+            try {
+                const res = await fetch(`/cart/${itemId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({ quantity: this.qty }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    // Update line total
+                    window.dispatchEvent(new CustomEvent('cart-qty-updated', {
+                        detail: { itemId, subtotal: this.qty * unitPrice }
+                    }));
+                    // Update cart badge & total
+                    if (typeof updateCartBadge === 'function') updateCartBadge(data.cart_count);
+                    // Update summary total
+                    const totalEl = document.querySelector('[data-cart-total]');
+                    if (totalEl) totalEl.textContent = data.cart_total;
+                    const totalBold = document.querySelector('[data-cart-grand-total]');
+                    if (totalBold) totalBold.textContent = data.cart_total;
+                }
+            } catch(e) {
+                if (typeof showToast === 'function') showToast('Gagal memperbarui keranjang.', 'error');
+            }
+            this.loading = false;
+        },
+        increment() {
+            if (this.qty < this.maxStock) {
+                this.qty++;
+                this.updateQty();
+            }
+        },
+        decrement() {
+            if (this.qty > 1) {
+                this.qty--;
+                this.updateQty();
+            }
+        }
+    };
+}
+</script>
+@endpush

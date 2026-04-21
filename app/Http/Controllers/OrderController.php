@@ -81,18 +81,28 @@ class OrderController extends Controller
     }
 
     /**
+     * Hapus kupon yang sudah diterapkan.
+     */
+    public function removeCoupon()
+    {
+        session()->forget('coupon_code');
+        return back()->with('success', 'Kupon berhasil dihapus.');
+    }
+
+    /**
      * Proses order baru.
      */
     public function store(Request $request)
     {
         $request->validate([
             'name'  => 'required|string|max:100',
-            'phone' => 'required|string|max:20',
+            'phone' => ['required', 'string', 'max:20', 'regex:/^[0-9+\-\s()]{8,20}$/'],
             'email' => 'nullable|email|max:100',
             'notes' => 'nullable|string|max:500',
         ], [
             'name.required'  => 'Nama lengkap wajib diisi.',
             'phone.required' => 'Nomor WhatsApp wajib diisi.',
+            'phone.regex'    => 'Format nomor HP tidak valid.',
             'email.email'    => 'Format email tidak valid.',
         ]);
 
@@ -282,7 +292,8 @@ class OrderController extends Controller
                 $query->where('status', $status);
             })
             ->when($search, function ($query) use ($search) {
-                $query->where('order_number', 'like', "%{$search}%");
+                $escaped = str_replace(['%', '_'], ['\\%', '\\_'], $search);
+                $query->where('order_number', 'like', "%{$escaped}%");
             })
             ->latest()
             ->paginate(10)
@@ -304,6 +315,61 @@ class OrderController extends Controller
             ->firstOrFail();
 
         return view('order-detail', compact('order'));
+    }
+
+    /**
+     * Form cek order tanpa login.
+     */
+    public function trackForm()
+    {
+        return view('order-track');
+    }
+
+    /**
+     * Cek order berdasarkan nomor order + nomor HP.
+     */
+    public function track(Request $request)
+    {
+        $request->validate([
+            'order_number' => 'required|string|max:50',
+            'phone'        => 'required|string|max:20',
+        ], [
+            'order_number.required' => 'Nomor order wajib diisi.',
+            'phone.required'        => 'Nomor HP/WhatsApp wajib diisi.',
+        ]);
+
+        // Normalisasi nomor HP untuk pencocokan
+        $phone = preg_replace('/[^0-9]/', '', $request->phone);
+        $orderNumber = strtoupper(trim($request->order_number));
+
+        $order = Order::with('items.product')
+            ->where('order_number', $orderNumber)
+            ->first();
+
+        if (!$order) {
+            return back()->withInput()->with('error', 'Order tidak ditemukan. Pastikan nomor order benar.');
+        }
+
+        // Cocokkan nomor HP (normalisasi: hapus prefix 62/0)
+        $orderPhone = preg_replace('/[^0-9]/', '', $order->phone);
+        $normalizePhone = function ($p) {
+            if (str_starts_with($p, '62')) $p = substr($p, 2);
+            if (str_starts_with($p, '0')) $p = substr($p, 1);
+            return $p;
+        };
+
+        if ($normalizePhone($phone) !== $normalizePhone($orderPhone)) {
+            return back()->withInput()->with('error', 'Nomor HP tidak cocok dengan data order.');
+        }
+
+        // Simpan ke session agar bisa akses detail
+        $recentOrders = session('recent_order_numbers', []);
+        if (!in_array($order->order_number, $recentOrders)) {
+            $recentOrders[] = $order->order_number;
+            session(['recent_order_numbers' => array_slice($recentOrders, -10)]);
+        }
+
+        return view('order-track', compact('order'));
     }
 
     // ─────────────────────────────────────────────────────────────────────────

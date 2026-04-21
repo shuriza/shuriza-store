@@ -89,7 +89,12 @@
 @endpush
 
 @section('content')
-<div class="mt-24 max-w-7xl mx-auto px-4 sm:px-6 pb-16 space-y-10">
+<div class="relative mt-24 max-w-7xl mx-auto px-4 sm:px-6 pb-16 space-y-10">
+
+    {{-- ─── DECORATIVE GRADIENT BLURS ─────────────────────────────────────────── --}}
+    <div class="absolute top-0 -right-2 xl:right-[10%] w-64 h-24 rounded-full bg-gradient-to-b from-peri-light via-peri-dark to-peri-dark/70 blur-[100px] transform-gpu isolate pointer-events-none"></div>
+    <div class="absolute w-16 h-56 rounded-full bg-peri-light/50 top-20 left-56 xl:left-[30%] blur-3xl transform-gpu isolate rotate-6 pointer-events-none"></div>
+    <div class="absolute w-16 h-28 rounded-full bg-peri-light/80 -top-10 left-[50%] blur-[80px] transform-gpu isolate -rotate-12 pointer-events-none"></div>
 
     {{-- ─── HERO SWIPER ──────────────────────────────────────────────────────── --}}
     <section class="swiper hero-swiper">
@@ -188,13 +193,7 @@
                 <a href="{{ route('product.show', $fp->slug) }}"
                    class="group bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700 hover:shadow-lg hover:-translate-y-0.5 transition-all">
                     <div class="relative aspect-square">
-                        @if($fp->image_url)
-                            <img src="{{ $fp->image_url }}" alt="{{ $fp->name }}" class="w-full h-full object-cover">
-                        @else
-                            <div class="w-full h-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                                <i class="fas fa-box text-2xl text-gray-300"></i>
-                            </div>
-                        @endif
+                        <x-product-image :product="$fp" />
                         <div class="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                             -{{ $fp->flash_sale_percent }}%
                         </div>
@@ -252,23 +251,20 @@
     </section>
 
     {{-- ─── PRODUCT GRID ─────────────────────────────────────────────────────── --}}
-    <section>
+    <section x-data="{ loaded: false }" x-init="$nextTick(() => loaded = true)">
         @if($products->count())
-            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            {{-- Skeleton placeholder (tampil sebelum loaded) --}}
+            <div x-show="!loaded" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                <x-product-skeleton :count="12" />
+            </div>
+            {{-- Actual product grid --}}
+            <div x-show="loaded" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                 @foreach($products as $product)
                     <a href="{{ route('product.show', $product->slug) }}"
                        class="group bg-white dark:bg-gray-800 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col">
                         {{-- Image --}}
                         <div class="relative h-[195px] overflow-hidden bg-gray-100 dark:bg-white/5">
-                            @if($product->image_url)
-                                <img src="{{ $product->image_url }}" alt="{{ $product->name }}"
-                                     class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy">
-                            @else
-                                <div class="w-full h-full flex items-center justify-center"
-                                     style="background: {{ $product->category?->color ?? '#6c63ff' }}20;">
-                                    <i class="{{ $product->category?->icon ?? 'fas fa-box' }} text-4xl" style="color: {{ $product->category?->color ?? '#6c63ff' }};"></i>
-                                </div>
-                            @endif
+                            <x-product-image :product="$product" />
                             @if($product->badge)
                                 <span class="absolute top-2 left-2 px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wide text-white
                                     {{ $product->badge === 'hot' ? 'bg-red-500' : ($product->badge === 'sale' ? 'bg-amber-500' : 'bg-emerald-500') }}">
@@ -336,15 +332,7 @@
                 <a href="{{ route('product.show', $p->slug) }}"
                    class="group bg-white dark:bg-gray-800 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col">
                     <div class="relative h-[195px] overflow-hidden bg-gray-100 dark:bg-white/5">
-                        @if($p->image_url)
-                            <img src="{{ $p->image_url }}" alt="{{ $p->name }}"
-                                 class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy">
-                        @else
-                            <div class="w-full h-full flex items-center justify-center"
-                                 style="background: {{ $p->category?->color ?? '#6c63ff' }}20;">
-                                <i class="{{ $p->category?->icon ?? 'fas fa-box' }} text-4xl" style="color: {{ $p->category?->color ?? '#6c63ff' }};"></i>
-                            </div>
-                        @endif
+                        <x-product-image :product="$p" />
                         @if($p->badge)
                             <span class="absolute top-2 left-2 px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wide text-white
                                 {{ $p->badge === 'hot' ? 'bg-red-500' : ($p->badge === 'sale' ? 'bg-amber-500' : 'bg-emerald-500') }}">
@@ -382,7 +370,7 @@
     @endif
 
     {{-- ─── WHY CHOOSE US ────────────────────────────────────────────────────── --}}
-    <section>
+    <section class="fade-in-up">
         <div class="text-center mb-8">
             <h2 class="text-2xl sm:text-3xl font-poppins font-bold text-gray-900 dark:text-white">
                 Kenapa Belanja di {{ setting('store_name', 'Shuriza Store') }}?
@@ -422,7 +410,7 @@
     </section>
 
     {{-- ─── STATS COUNTER ────────────────────────────────────────────────────── --}}
-    <section x-data="statsCounter()" x-init="observeAndCount($el)" class="grid grid-cols-3 gap-4">
+    <section class="fade-in-up grid grid-cols-3 gap-4" x-data="statsCounter()" x-init="observeAndCount($el)">
         <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 text-center shadow-sm">
             <div class="text-2xl sm:text-3xl font-poppins font-bold text-peri" x-text="formatted(orders)">0</div>
             <div class="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">Transaksi</div>
@@ -490,7 +478,7 @@
     @endif
 
     {{-- ─── TESTIMONIALS ─────────────────────────────────────────────────────── --}}
-    <section>
+    <section class="fade-in-up">
         <div class="text-center mb-8">
             <h2 class="text-2xl sm:text-3xl font-poppins font-bold text-gray-900 dark:text-white">
                 Apa Kata Mereka?
@@ -498,57 +486,92 @@
             <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Testimoni dari pelanggan setia {{ setting('store_name', 'Shuriza Store') }}</p>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            @php
-                $testimonials = [
-                    ['name' => 'Andi S.', 'text' => 'Pengiriman cepat banget! Baru bayar langsung dapat akun Netflix. Recommended seller 👍', 'rating' => 5, 'product' => 'Netflix Premium'],
-                    ['name' => 'Putri R.', 'text' => 'Harganya murah dibanding tempat lain, kualitas produk juga bagus. Sudah langganan di sini.', 'rating' => 5, 'product' => 'Spotify Premium'],
-                    ['name' => 'Budi K.', 'text' => 'Admin ramah dan fast response. Pernah ada masalah langsung diganti. Mantap!', 'rating' => 5, 'product' => 'Microsoft Office'],
-                ];
-            @endphp
-            @foreach($testimonials as $t)
-                <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-white/5">
-                    <div class="flex items-center gap-1 mb-3">
-                        @for($i = 0; $i < $t['rating']; $i++)
-                            <i class="fas fa-star text-amber-400 text-xs"></i>
-                        @endfor
-                    </div>
-                    <p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-4">"{{ $t['text'] }}"</p>
-                    <div class="flex items-center gap-3 pt-3 border-t border-gray-100 dark:border-white/5">
-                        <div class="w-9 h-9 rounded-full bg-peri/10 flex items-center justify-center">
-                            <i class="fas fa-user text-peri text-xs"></i>
+            @if($testimonials->count() > 0)
+                {{-- Testimoni dinamis dari review --}}
+                @foreach($testimonials->take(3) as $review)
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-white/5">
+                        <div class="flex items-center gap-1 mb-3">
+                            @for($i = 0; $i < $review->rating; $i++)
+                                <i class="fas fa-star text-amber-400 text-xs"></i>
+                            @endfor
+                            @for($i = $review->rating; $i < 5; $i++)
+                                <i class="fas fa-star text-gray-300 dark:text-gray-600 text-xs"></i>
+                            @endfor
                         </div>
-                        <div>
-                            <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ $t['name'] }}</div>
-                            <div class="text-xs text-gray-400">Pembeli {{ $t['product'] }}</div>
+                        <p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-4">"{{ Str::limit($review->comment, 150) }}"</p>
+                        <div class="flex items-center gap-3 pt-3 border-t border-gray-100 dark:border-white/5">
+                            <div class="w-9 h-9 rounded-full bg-peri/10 flex items-center justify-center">
+                                <span class="text-peri text-xs font-bold">{{ $review->reviewer_initial }}</span>
+                            </div>
+                            <div>
+                                <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ $review->reviewer_display_name }}</div>
+                                <div class="text-xs text-gray-400">Pembeli {{ $review->product?->name ?? 'Produk' }}</div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            @endforeach
+                @endforeach
+            @else
+                {{-- Fallback: testimoni default jika belum ada review --}}
+                @php
+                    $defaultTestimonials = [
+                        ['name' => 'Andi S.', 'text' => 'Pengiriman cepat banget! Baru bayar langsung dapat akun Netflix. Recommended seller!', 'rating' => 5, 'product' => 'Netflix Premium'],
+                        ['name' => 'Putri R.', 'text' => 'Harganya murah dibanding tempat lain, kualitas produk juga bagus. Sudah langganan di sini.', 'rating' => 5, 'product' => 'Spotify Premium'],
+                        ['name' => 'Budi K.', 'text' => 'Admin ramah dan fast response. Pernah ada masalah langsung diganti. Mantap!', 'rating' => 5, 'product' => 'Microsoft Office'],
+                    ];
+                @endphp
+                @foreach($defaultTestimonials as $t)
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-white/5">
+                        <div class="flex items-center gap-1 mb-3">
+                            @for($i = 0; $i < $t['rating']; $i++)
+                                <i class="fas fa-star text-amber-400 text-xs"></i>
+                            @endfor
+                        </div>
+                        <p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-4">"{{ $t['text'] }}"</p>
+                        <div class="flex items-center gap-3 pt-3 border-t border-gray-100 dark:border-white/5">
+                            <div class="w-9 h-9 rounded-full bg-peri/10 flex items-center justify-center">
+                                <i class="fas fa-user text-peri text-xs"></i>
+                            </div>
+                            <div>
+                                <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ $t['name'] }}</div>
+                                <div class="text-xs text-gray-400">Pembeli {{ $t['product'] }}</div>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            @endif
         </div>
     </section>
 
     {{-- ─── REGISTER CTA (GUEST ONLY) ───────────────────────────────────────── --}}
     @guest
-    <section class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-peri to-peri-dark p-8 sm:p-12">
-        {{-- Decorative blobs --}}
+    <section class="fade-in-up relative overflow-hidden rounded-2xl p-8 sm:p-12">
+        {{-- Gradient blur background --}}
+        <div class="absolute inset-0 bg-gradient-to-br from-peri to-peri-dark rounded-2xl"></div>
+        <div class="absolute w-64 h-24 top-0 -right-2 rounded-full bg-gradient-to-b from-peri-light via-peri-dark to-peri-dark/70 blur-[100px] transform-gpu isolate"></div>
+        <div class="absolute w-16 h-56 rounded-full bg-peri-light/50 top-10 left-56 blur-3xl transform-gpu isolate rotate-6"></div>
+        <div class="absolute w-16 h-28 rounded-full bg-pink-500/40 -bottom-10 right-[30%] blur-[80px] transform-gpu isolate -rotate-12"></div>
         <div class="absolute -top-16 -left-16 w-48 h-48 rounded-full bg-white/10 blur-3xl"></div>
         <div class="absolute -bottom-20 -right-20 w-64 h-64 rounded-full bg-pink-500/10 blur-3xl"></div>
 
-        <div class="relative flex flex-col lg:flex-row items-center gap-8">
-            <div class="flex-1 text-center lg:text-left">
-                <h2 class="text-2xl sm:text-3xl font-poppins font-bold text-white leading-tight">
+        <div class="relative flex flex-col sm:flex-row items-center gap-8">
+            <div class="flex-1 flex flex-col gap-5 text-center sm:text-left">
+                <h2 class="text-2xl sm:text-3xl font-poppins font-bold text-white leading-tight capitalize">
                     Dapatkan berbagai keuntungan dengan mendaftar
                 </h2>
-                <p class="mt-3 text-white/75 text-sm sm:text-base leading-relaxed max-w-xl">
-                    Kamu akan bebas biaya admin, lebih mudah mengelola transaksi dan pesanan, serta bebas mengatur jumlah dan menyimpannya ke dalam keranjang.
+                <p class="text-white/75 text-sm sm:text-lg leading-relaxed max-w-xl">
+                    Kamu akan bebas biaya admin, lebih mudah mengelola transaksi dan pesanan, serta bebas mengatur jumlah dan menyimpannya ke dalam keranjang. Tunggu apa lagi?
                 </p>
-                <a href="{{ route('register') }}"
-                   class="inline-flex items-center gap-2 mt-6 px-6 py-3 rounded-full bg-white text-peri font-bold text-sm hover:bg-gray-100 transition-all duration-200 shadow-lg shadow-black/10">
-                    <i class="fas fa-user-plus text-xs"></i> Daftar Sekarang
-                </a>
+                <div>
+                    <a href="{{ route('register') }}"
+                       class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white text-peri font-bold text-sm hover:bg-gray-100 transition-all duration-200 shadow-lg shadow-black/10 animate-bounce-subtle">
+                        <i class="fas fa-user-plus text-xs"></i> Daftar Sekarang
+                    </a>
+                </div>
             </div>
-            <div class="hidden lg:flex shrink-0 w-48 h-48 rounded-2xl bg-white/10 backdrop-blur-sm items-center justify-center">
-                <i class="fas fa-gift text-6xl text-white/60"></i>
+            <div class="hidden sm:flex shrink-0 w-1/3 justify-center mt-auto">
+                <div class="w-40 h-40 lg:w-48 lg:h-48 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
+                    <i class="fas fa-gift text-6xl lg:text-7xl text-white/60"></i>
+                </div>
             </div>
         </div>
     </section>

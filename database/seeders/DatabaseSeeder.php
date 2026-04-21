@@ -578,6 +578,48 @@ class DatabaseSeeder extends Seeder
             );
         }
 
+        // ── FAQ ────────────────────────────────────────────────────────────────
+        $faqs = [
+            ['question' => 'Bagaimana cara memesan produk?', 'answer' => 'Pilih produk yang diinginkan, tambahkan ke keranjang, lalu lanjutkan ke checkout. Isi data diri dan konfirmasi pesanan via WhatsApp.', 'sort_order' => 1],
+            ['question' => 'Berapa lama proses pengiriman?', 'answer' => 'Produk digital dikirim dalam waktu 1-24 jam setelah pembayaran dikonfirmasi. Untuk produk instan, pengiriman dilakukan segera setelah pembayaran.', 'sort_order' => 2],
+            ['question' => 'Metode pembayaran apa saja yang tersedia?', 'answer' => 'Kami menerima pembayaran via transfer bank, e-wallet (GoPay, OVO, DANA, ShopeePay), dan QRIS. Konfirmasi pembayaran dilakukan melalui WhatsApp.', 'sort_order' => 3],
+            ['question' => 'Apakah ada garansi untuk produk yang dibeli?', 'answer' => 'Ya, setiap produk memiliki garansi sesuai dengan deskripsi produk. Jika ada masalah, silakan hubungi admin melalui WhatsApp untuk penggantian.', 'sort_order' => 4],
+            ['question' => 'Bagaimana jika produk yang saya terima bermasalah?', 'answer' => 'Segera hubungi admin via WhatsApp dengan menyertakan nomor order dan bukti masalah. Kami akan memproses penggantian atau refund sesuai kebijakan.', 'sort_order' => 5],
+            ['question' => 'Apakah saya harus membuat akun untuk berbelanja?', 'answer' => 'Tidak wajib. Anda bisa berbelanja sebagai guest. Namun dengan membuat akun, Anda bisa melihat riwayat pesanan, menyimpan wishlist, dan mendapat notifikasi.', 'sort_order' => 6],
+            ['question' => 'Bagaimana cara mengecek status pesanan saya?', 'answer' => 'Jika sudah login, buka menu "Pesanan Saya" di dashboard. Jika belanja sebagai guest, gunakan fitur "Cek Pesanan" dengan memasukkan nomor order dan nomor HP.', 'sort_order' => 7],
+            ['question' => 'Apakah bisa request produk yang belum tersedia?', 'answer' => 'Tentu! Silakan hubungi admin via WhatsApp untuk request produk digital yang belum tersedia di toko kami. Kami akan berusaha menyediakannya.', 'sort_order' => 8],
+        ];
+
+        foreach ($faqs as $faq) {
+            \App\Models\Faq::updateOrCreate(
+                ['question' => $faq['question']],
+                array_merge($faq, ['is_active' => true])
+            );
+        }
+
+        // ── Sample Reviews ────────────────────────────────────────────────────
+        $testUser = User::where('email', 'user@example.com')->first();
+        if ($testUser) {
+            $reviewProducts = Product::inRandomOrder()->limit(5)->get();
+            $reviewComments = [
+                'Pengiriman cepat, produk sesuai deskripsi. Recommended!',
+                'Harga murah dibanding tempat lain. Sudah langganan di sini.',
+                'Admin fast response, sangat membantu. Terima kasih!',
+                'Produk original dan berfungsi dengan baik. Puas belanja di sini.',
+                'Proses cepat dan mudah. Pasti order lagi!',
+            ];
+            foreach ($reviewProducts as $i => $product) {
+                \App\Models\Review::updateOrCreate(
+                    ['product_id' => $product->id, 'user_id' => $testUser->id],
+                    [
+                        'rating' => rand(4, 5),
+                        'comment' => $reviewComments[$i] ?? $reviewComments[0],
+                        'is_approved' => true,
+                    ]
+                );
+            }
+        }
+
         $this->command->info("✅ Seeder berhasil dijalankan!");
         $this->command->info("");
         $this->command->info("🔐 Admin Login:");

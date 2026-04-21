@@ -115,4 +115,19 @@ class DashboardController extends Controller
             'newUsersToday',
         ));
     }
+
+    /**
+     * API: Quick stats untuk admin notification bell & auto-refresh.
+     */
+    public function quickStats()
+    {
+        return response()->json([
+            'pending_orders'   => Order::pending()->count(),
+            'processing_orders' => Order::processing()->count(),
+            'today_orders'     => Order::whereDate('created_at', today())->count(),
+            'today_revenue'    => Order::completed()->whereDate('created_at', today())->sum('total'),
+            'low_stock'        => Product::active()->where('stock', '>', 0)->where('stock', '<=', (int) config('app.low_stock_threshold', 5))->count(),
+            'out_of_stock'     => Product::active()->where('stock', 0)->count(),
+        ]);
+    }
 }

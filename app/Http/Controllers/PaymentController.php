@@ -104,7 +104,13 @@ class PaymentController extends Controller
     {
         $payload = $request->all();
 
-        Log::info('Payment notification received', $payload);
+        // Log hanya field non-sensitif
+        Log::info('Payment notification received', [
+            'order_id'           => $payload['order_id'] ?? null,
+            'transaction_status' => $payload['transaction_status'] ?? null,
+            'status_code'        => $payload['status_code'] ?? null,
+            'fraud_status'       => $payload['fraud_status'] ?? null,
+        ]);
 
         $result = PaymentService::handleNotification($payload);
 

@@ -24,8 +24,15 @@ class NotificationController extends Controller
 
         $notification->markAsRead();
 
+        // Validasi link: hanya redirect ke URL internal (cegah open redirect)
         if ($notification->link) {
-            return redirect($notification->link);
+            $parsed = parse_url($notification->link);
+            $isInternal = !isset($parsed['host'])
+                || $parsed['host'] === request()->getHost();
+
+            if ($isInternal) {
+                return redirect($notification->link);
+            }
         }
 
         return back();

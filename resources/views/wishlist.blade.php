@@ -38,14 +38,7 @@
                         {{-- Image --}}
                         <a href="{{ route('products.show', $product->slug) }}" class="block">
                             <div class="relative h-[195px] overflow-hidden bg-gray-100 dark:bg-white/5">
-                                @if($product->image_url)
-                                    <img src="{{ $product->image_url }}" alt="{{ $product->name }}"
-                                         class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy">
-                                @else
-                                    <div class="w-full h-full flex items-center justify-center" style="background: {{ $product->category->color ?? '#6c63ff' }}20;">
-                                        <i class="{{ $product->category->icon ?? 'fas fa-box' }} text-4xl" style="color: {{ $product->category->color ?? '#6c63ff' }};"></i>
-                                    </div>
-                                @endif
+                                <x-product-image :product="$product" />
                                 @if($product->badge)
                                     <span class="absolute top-2 left-2 px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wide text-white
                                         {{ $product->badge === 'hot' ? 'bg-red-500' : ($product->badge === 'sale' ? 'bg-amber-500' : 'bg-emerald-500') }}">
@@ -65,8 +58,10 @@
                             </a>
                             <div class="mt-auto pt-3 flex items-end justify-between gap-1">
                                 <div>
-                                    <span class="text-sm font-bold text-peri">{{ $product->formatted_price }}</span>
-                                    @if($product->original_price && $product->original_price > $product->price)
+                                    <span class="text-sm font-bold text-peri">{{ $product->formatted_effective_price }}</span>
+                                    @if($product->is_flash_sale)
+                                        <span class="block text-[11px] text-gray-400 line-through">{{ $product->formatted_price }}</span>
+                                    @elseif($product->original_price && $product->original_price > $product->price)
                                         <span class="block text-[11px] text-gray-400 line-through">Rp {{ number_format($product->original_price, 0, ',', '.') }}</span>
                                     @endif
                                 </div>

@@ -32,6 +32,11 @@ class SettingsController extends Controller
                 'icon'  => 'fa-sliders-h',
                 'desc'  => 'Status toko, minimum order, maintenance',
             ],
+            'review' => [
+                'title' => 'Pengaturan Ulasan',
+                'icon'  => 'fa-star',
+                'desc'  => 'Mode tampilan reviewer, aktif/nonaktif ulasan',
+            ],
             'appearance' => [
                 'title' => 'Pengaturan Tampilan',
                 'icon'  => 'fa-palette',
@@ -112,6 +117,10 @@ class SettingsController extends Controller
             ['group' => 'shop', 'key' => 'shop_status',         'value' => 'open',   'type' => 'text',     'label' => 'Status Toko'],
             ['group' => 'shop', 'key' => 'maintenance_message', 'value' => 'Toko sedang dalam perbaikan. Silakan kembali lagi nanti.', 'type' => 'textarea', 'label' => 'Pesan Maintenance'],
             ['group' => 'shop', 'key' => 'min_order_amount',    'value' => '0',      'type' => 'number',   'label' => 'Minimum Order (Rp)'],
+
+            // Pengaturan Ulasan
+            ['group' => 'review', 'key' => 'review_display_mode', 'value' => 'name', 'type' => 'text', 'label' => 'Tampilan Nama Reviewer'],
+            ['group' => 'review', 'key' => 'review_enabled',      'value' => '1',    'type' => 'boolean', 'label' => 'Aktifkan Fitur Ulasan'],
 
             // Pengaturan Tampilan
             ['group' => 'appearance', 'key' => 'hero_title',    'value' => 'Produk Digital Premium', 'type' => 'text', 'label' => 'Judul Hero Banner'],

@@ -66,6 +66,17 @@ class CartController extends Controller
 
         $cartItem = CartItem::firstOrNew($condition);
 
+        // Batas maksimal 50 produk berbeda dalam keranjang
+        if (!$cartItem->exists) {
+            $cartDistinctCount = $this->getCartQuery()->count();
+            if ($cartDistinctCount >= 50) {
+                if ($request->expectsJson()) {
+                    return response()->json(['success' => false, 'message' => 'Maksimal 50 produk berbeda dalam keranjang.'], 422);
+                }
+                return back()->with('error', 'Maksimal 50 produk berbeda dalam keranjang.');
+            }
+        }
+
         // Cek batas stok
         $newQty = ($cartItem->exists ? $cartItem->quantity : 0) + $qty;
         if ($product->stock > 0 && $newQty > $product->stock) {

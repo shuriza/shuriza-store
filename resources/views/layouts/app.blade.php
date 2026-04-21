@@ -7,18 +7,64 @@
     <title>@yield('title', setting('store_name', 'Shuriza Store Kediri')) – Produk & Jasa Digital Premium</title>
     <meta name="description" content="@yield('description', setting('store_name', 'Shuriza Store Kediri') . ' – ' . setting('store_tagline', 'Penyedia layanan digital terpercaya') . '. Berbagai produk dan jasa digital premium dengan harga terjangkau.')" />
 
+    {{-- Canonical URL --}}
+    <link rel="canonical" href="{{ url()->current() }}" />
+
     {{-- Open Graph --}}
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content="@yield('og_type', 'website')" />
     <meta property="og:title" content="@yield('title', setting('store_name', 'Shuriza Store Kediri')) – Produk & Jasa Digital Premium" />
     <meta property="og:description" content="@yield('description', setting('store_name', 'Shuriza Store Kediri') . ' – ' . setting('store_tagline', 'Penyedia layanan digital terpercaya') . '. Berbagai produk dan jasa digital premium dengan harga terjangkau.')" />
     <meta property="og:url" content="{{ url()->current() }}" />
     <meta property="og:site_name" content="{{ setting('store_name', 'Shuriza Store Kediri') }}" />
+    <meta property="og:locale" content="id_ID" />
+    @hasSection('og_image')
+        <meta property="og:image" content="@yield('og_image')" />
+    @elseif(setting('store_logo'))
+        <meta property="og:image" content="{{ asset('storage/' . setting('store_logo')) }}" />
+    @endif
+
+    {{-- Twitter Card --}}
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="@yield('title', setting('store_name', 'Shuriza Store Kediri'))" />
+    <meta name="twitter:description" content="@yield('description', setting('store_tagline', 'Penyedia layanan digital terpercaya'))" />
+    @hasSection('og_image')
+        <meta name="twitter:image" content="@yield('og_image')" />
+    @endif
+
+    {{-- Favicon --}}
     @if(setting('store_favicon'))
         <link rel="icon" href="{{ asset('storage/' . setting('store_favicon')) }}" type="image/png">
     @endif
-    @hasSection('og_image')
-        <meta property="og:image" content="@yield('og_image')" />
-    @endif
+
+    {{-- JSON-LD: Organization (semua halaman) --}}
+    @php
+        $orgJsonLd = [
+            '@context' => 'https://schema.org',
+            '@type' => 'Organization',
+            'name' => setting('store_name', 'Shuriza Store Kediri'),
+            'url' => url('/'),
+            'description' => setting('store_tagline', 'Penyedia layanan digital terpercaya'),
+            'address' => [
+                '@type' => 'PostalAddress',
+                'addressLocality' => 'Kediri',
+                'addressRegion' => 'Jawa Timur',
+                'addressCountry' => 'ID',
+            ],
+            'contactPoint' => [
+                '@type' => 'ContactPoint',
+                'telephone' => '+' . setting('whatsapp_number', '6281234567890'),
+                'contactType' => 'customer service',
+                'availableLanguage' => 'Indonesian',
+            ],
+        ];
+        if (setting('store_logo')) {
+            $orgJsonLd['logo'] = asset('storage/' . setting('store_logo'));
+        }
+    @endphp
+    <script type="application/ld+json">{!! json_encode($orgJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) !!}</script>
+
+    {{-- JSON-LD: halaman spesifik --}}
+    @stack('jsonld')
 
     {{-- Dark mode: prevent FOUC --}}
     <script>
@@ -88,6 +134,50 @@
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(20px); }
             to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Bounce Subtle (CTA buttons) ── */
+        @keyframes bounceSubtle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+        .animate-bounce-subtle {
+            animation: bounceSubtle 2s ease-in-out infinite;
+        }
+        .animate-bounce-subtle:hover {
+            animation: none;
+            transform: translateY(-2px);
+        }
+
+        /* ── Skeleton Loading ── */
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .skeleton {
+            background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s ease-in-out infinite;
+            border-radius: 0.5rem;
+        }
+        .dark .skeleton {
+            background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+            background-size: 200% 100%;
+        }
+        :not(.dark) .skeleton {
+            background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+            background-size: 200% 100%;
+        }
+
+        /* ── Fade-in on scroll ── */
+        .fade-in-up {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        .fade-in-up.visible {
+            opacity: 1;
+            transform: translateY(0);
         }
     </style>
 
@@ -167,39 +257,25 @@
                 </svg>
             </button>
 
-            {{-- Cart --}}
-            {{-- Wishlist --}}
+            {{-- Cart + Notification (clean navbar) --}}
             @auth
-                {{-- Notifications --}}
+                @php
+                    $unreadNotifs = \App\Models\Notification::where('user_id', auth()->id())->whereNull('read_at')->count();
+                @endphp
+                {{-- Notification bell - hanya tampil jika ada unread --}}
+                @if($unreadNotifs > 0)
                 <a href="{{ route('notifications.index') }}"
                    class="relative w-10 h-10 rounded-full flex items-center justify-center
                           bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300
                           hover:bg-peri hover:text-white transition-all duration-200"
                    title="Notifikasi">
                     <i class="fas fa-bell text-sm"></i>
-                    @php $unreadNotifs = \App\Models\Notification::where('user_id', auth()->id())->whereNull('read_at')->count(); @endphp
-                    @if($unreadNotifs > 0)
-                        <span class="absolute -top-1 -right-1 min-w-[20px] h-5 rounded-full
-                                     bg-red-500 text-white text-[11px] font-bold
-                                     flex items-center justify-center px-1
-                                     border-2 border-white dark:border-peri-darkest">{{ $unreadNotifs > 9 ? '9+' : $unreadNotifs }}</span>
-                    @endif
+                    <span class="absolute -top-1 -right-1 min-w-[20px] h-5 rounded-full
+                                 bg-red-500 text-white text-[11px] font-bold
+                                 flex items-center justify-center px-1
+                                 border-2 border-white dark:border-peri-darkest">{{ $unreadNotifs > 9 ? '9+' : $unreadNotifs }}</span>
                 </a>
-
-                <a href="{{ route('wishlist.index') }}"
-                   class="relative w-10 h-10 rounded-full flex items-center justify-center
-                          bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300
-                          hover:bg-pink-500 hover:text-white transition-all duration-200"
-                   title="Wishlist">
-                    <i class="fas fa-heart text-sm"></i>
-                    @php $wishCount = auth()->user()->wishlists()->count(); @endphp
-                    @if($wishCount > 0)
-                        <span class="absolute -top-1 -right-1 min-w-[20px] h-5 rounded-full
-                                     bg-pink-500 text-white text-[11px] font-bold
-                                     flex items-center justify-center px-1
-                                     border-2 border-white dark:border-peri-darkest">{{ $wishCount }}</span>
-                    @endif
-                </a>
+                @endif
             @endauth
 
             <button @click="cartOpen = true"
@@ -223,8 +299,8 @@
                 <a href="{{ route('login') }}"
                    class="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-xl
                           bg-gradient-to-r from-peri to-peri-dark text-white text-sm font-semibold
-                          shadow-lg shadow-peri/25 hover:shadow-peri/40 hover:-translate-y-0.5
-                          transition-all duration-200">
+                          shadow-lg shadow-peri/25 hover:shadow-peri/40
+                          transition-all duration-200 animate-bounce-subtle">
                     <i class="fas fa-sign-in-alt text-xs"></i> Masuk
                 </a>
                 <a href="{{ route('login') }}"
@@ -273,6 +349,23 @@
                                class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-600 dark:text-gray-300
                                       hover:bg-gray-100 dark:hover:bg-white/5 transition-colors duration-150">
                                 <i class="fas fa-box w-4 text-peri text-xs"></i> Pesanan Saya
+                            </a>
+                            <a href="{{ route('wishlist.index') }}"
+                               class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-600 dark:text-gray-300
+                                      hover:bg-gray-100 dark:hover:bg-white/5 transition-colors duration-150">
+                                <i class="fas fa-heart w-4 text-pink-500 text-xs"></i> Wishlist
+                                @php $wishCount = auth()->user()->wishlists()->count(); @endphp
+                                @if($wishCount > 0)
+                                    <span class="ml-auto text-[10px] font-bold bg-pink-500/10 text-pink-500 px-1.5 py-0.5 rounded-full">{{ $wishCount }}</span>
+                                @endif
+                            </a>
+                            <a href="{{ route('notifications.index') }}"
+                               class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-600 dark:text-gray-300
+                                      hover:bg-gray-100 dark:hover:bg-white/5 transition-colors duration-150">
+                                <i class="fas fa-bell w-4 text-peri text-xs"></i> Notifikasi
+                                @if(($unreadNotifs ?? 0) > 0)
+                                    <span class="ml-auto text-[10px] font-bold bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded-full">{{ $unreadNotifs }}</span>
+                                @endif
                             </a>
                             @if(auth()->user()->isAdmin())
                             <a href="{{ route('admin.dashboard') }}"
@@ -335,7 +428,7 @@
                    x-ref="searchInput"
                    @input.debounce.400ms="doSearch($event.target.value)"
                    x-init="$watch('searchOpen', v => { if(v) $nextTick(() => $refs.searchInput.focus()); else { $refs.searchInput.value = ''; searchResultsHtml = ''; } })"
-                   placeholder="Cari produk, kategori, atau jasa digital..."
+                   placeholder="Cari produk, kategori, atau nomor order..."
                    autocomplete="off"
                    class="flex-1 py-4 bg-transparent border-none outline-none text-gray-900 dark:text-white
                           placeholder-gray-400 dark:placeholder-gray-500 text-sm focus:ring-0" />
@@ -401,8 +494,18 @@
                 </a>
                 <a href="{{ route('products.index') }}"
                    class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors
-                          {{ request()->routeIs('products.*') ? 'bg-peri/10 text-peri dark:text-peri-light' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5' }}">
+                          {{ request()->routeIs('products.index') || request()->routeIs('products.show') || request()->routeIs('products.category') ? 'bg-peri/10 text-peri dark:text-peri-light' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5' }}">
                     <i class="fas fa-box w-5 text-center text-peri"></i> Produk
+                </a>
+                <a href="{{ route('products.promo') }}"
+                   class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors
+                          {{ request()->routeIs('products.promo') ? 'bg-peri/10 text-peri dark:text-peri-light' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5' }}">
+                    <i class="fas fa-percent w-5 text-center text-red-500"></i> Promo
+                </a>
+                <a href="{{ route('order.track') }}"
+                   class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors
+                          {{ request()->routeIs('order.track') ? 'bg-peri/10 text-peri dark:text-peri-light' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5' }}">
+                    <i class="fas fa-search w-5 text-center text-peri"></i> Cek Pesanan
                 </a>
                 <a href="{{ route('articles.index') }}"
                    class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors
@@ -615,6 +718,8 @@
             <div>
                 <h4 class="text-sm font-bold text-gray-900 dark:text-white mb-4">Informasi</h4>
                 <ul class="space-y-2.5">
+                    <li><a href="{{ route('products.promo') }}" class="text-sm text-gray-500 dark:text-gray-400 hover:text-peri dark:hover:text-peri-light transition-colors flex items-center gap-2"><i class="fas fa-percent w-4 text-xs text-red-500"></i>Promo & Diskon</a></li>
+                    <li><a href="{{ route('order.track') }}" class="text-sm text-gray-500 dark:text-gray-400 hover:text-peri dark:hover:text-peri-light transition-colors flex items-center gap-2"><i class="fas fa-search w-4 text-xs text-peri"></i>Cek Pesanan</a></li>
                     <li><a href="{{ route('pages.how-to-buy') }}" class="text-sm text-gray-500 dark:text-gray-400 hover:text-peri dark:hover:text-peri-light transition-colors flex items-center gap-2"><i class="fas fa-info-circle w-4 text-xs text-peri"></i>Cara Pembelian</a></li>
                     <li><a href="{{ route('pages.faq') }}" class="text-sm text-gray-500 dark:text-gray-400 hover:text-peri dark:hover:text-peri-light transition-colors flex items-center gap-2"><i class="fas fa-question-circle w-4 text-xs text-peri"></i>FAQ</a></li>
                     <li><a href="{{ route('pages.about') }}" class="text-sm text-gray-500 dark:text-gray-400 hover:text-peri dark:hover:text-peri-light transition-colors flex items-center gap-2"><i class="fas fa-store w-4 text-xs text-peri"></i>Tentang Kami</a></li>
@@ -770,9 +875,9 @@ function layoutApp() {
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="text-sm font-semibold text-gray-900 dark:text-white truncate">${p.name}</div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400">${p.category ?? ''} ${p.badge ? '· <b>'+p.badge+'</b>' : ''} ${!p.is_in_stock ? '· <span class="text-red-500">Stok Habis</span>' : ''}</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">${p.subtitle ?? ''}</div>
                         </div>
-                        <span class="text-sm font-bold text-peri dark:text-peri-light whitespace-nowrap">${p.price}</span>
+                        ${p.price ? '<span class="text-sm font-bold text-peri dark:text-peri-light whitespace-nowrap">'+p.price+'</span>' : ''}
                     </a>
                 `).join('');
             } catch {
@@ -995,6 +1100,78 @@ window.showToast = function(message, type = 'success') {
         setTimeout(() => toast.remove(), 300);
     }, 3500);
 };
+</script>
+
+{{-- ─── SOCIAL PROOF POPUP ──────────────────────────────────────────────────── --}}
+<div x-data="socialProof()" x-init="start()" x-cloak>
+    <div x-show="visible"
+         x-transition:enter="transition ease-out duration-500"
+         x-transition:enter-start="translate-y-full opacity-0"
+         x-transition:enter-end="translate-y-0 opacity-100"
+         x-transition:leave="transition ease-in duration-300"
+         x-transition:leave-start="translate-y-0 opacity-100"
+         x-transition:leave-end="translate-y-full opacity-0"
+         class="fixed bottom-20 left-4 z-40 max-w-xs">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700/50 p-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center shrink-0">
+                <i class="fas fa-shopping-bag text-green-500"></i>
+            </div>
+            <div class="min-w-0">
+                <p class="text-sm text-gray-900 dark:text-white font-semibold truncate" x-text="currentOrder.name + ' baru saja membeli'"></p>
+                <p class="text-xs text-peri font-medium truncate" x-text="currentOrder.product"></p>
+                <p class="text-[10px] text-gray-400 mt-0.5" x-text="currentOrder.time"></p>
+            </div>
+            <button @click="visible = false" class="shrink-0 w-6 h-6 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-gray-600 transition">
+                <i class="fas fa-times text-[10px]"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function socialProof() {
+    return {
+        orders: [],
+        currentOrder: { name: '', product: '', time: '' },
+        visible: false,
+        index: 0,
+        async start() {
+            try {
+                const res = await fetch('{{ route("api.recent-orders") }}');
+                this.orders = await res.json();
+            } catch(e) { return; }
+            if (this.orders.length === 0) return;
+            // Tampilkan pertama setelah 15 detik
+            setTimeout(() => this.showNext(), 15000);
+        },
+        showNext() {
+            if (this.orders.length === 0) return;
+            this.currentOrder = this.orders[this.index % this.orders.length];
+            this.visible = true;
+            this.index++;
+            // Sembunyikan setelah 5 detik
+            setTimeout(() => { this.visible = false; }, 5000);
+            // Tampilkan berikutnya setelah 30 detik
+            setTimeout(() => this.showNext(), 30000);
+        }
+    };
+}
+</script>
+
+{{-- ─── FADE-IN ON SCROLL OBSERVER ─────────────────────────────────────────── --}}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+    document.querySelectorAll('.fade-in-up').forEach(el => observer.observe(el));
+});
 </script>
 
 @stack('scripts')

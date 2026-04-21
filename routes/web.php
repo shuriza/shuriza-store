@@ -40,6 +40,9 @@ Route::get("/", [HomeController::class, "index"])->name("home");
 // Search (AJAX)
 Route::get("/search", [HomeController::class, "search"])->name("search");
 
+// Social proof - recent orders (AJAX)
+Route::get("/api/recent-orders", [HomeController::class, "recentOrders"])->middleware("throttle:10,1")->name("api.recent-orders");
+
 // SEO
 Route::get("/sitemap.xml", [SeoController::class, "sitemap"])->name("sitemap");
 Route::get("/robots.txt", [SeoController::class, "robots"])->name("robots");
@@ -51,13 +54,14 @@ Route::get("/produk", [ProductController::class, "index"])->name(
 Route::get("/produk/{product:slug}", [ProductController::class, "show"])->name(
     "products.show",
 );
-Route::get("/product/{product:slug}", [ProductController::class, "show"])->name(
-    "product.show",
-);
+// Redirect /product/{slug} ke /produk/{slug} untuk konsistensi
+Route::get("/product/{slug}", function (string $slug) {
+    return redirect()->route('products.show', $slug, 301);
+})->name("product.show");
 
 // Reviews
-Route::post("/produk/{product:slug}/review", [ReviewController::class, "store"])->name("reviews.store");
-Route::delete("/review/{review}", [ReviewController::class, "destroy"])->name("reviews.destroy");
+Route::post("/produk/{product:slug}/review", [ReviewController::class, "store"])->middleware("throttle:5,1")->name("reviews.store");
+Route::delete("/review/{review}", [ReviewController::class, "destroy"])->middleware("throttle:10,1")->name("reviews.destroy");
 
 /*
 |--------------------------------------------------------------------------
@@ -69,8 +73,8 @@ Route::prefix("cart")
     ->name("cart.")
     ->group(function () {
         Route::get("/", [CartController::class, "index"])->name("index");
-        Route::post("/add", [CartController::class, "add"])->name("add");
-        Route::patch("/{cartItem}", [CartController::class, "update"])->name(
+        Route::post("/add", [CartController::class, "add"])->middleware("throttle:30,1")->name("add");
+        Route::patch("/{cartItem}", [CartController::class, "update"])->middleware("throttle:30,1")->name(
             "update",
         );
         Route::delete("/clear", [CartController::class, "clear"])->name(
@@ -95,20 +99,23 @@ Route::prefix("order")
         Route::get("/checkout", [OrderController::class, "checkout"])->name(
             "checkout",
         );
-        Route::post("/checkout", [OrderController::class, "store"])->name(
+        Route::post("/checkout", [OrderController::class, "store"])->middleware("throttle:5,1")->name(
             "store",
         );
-        Route::post("/apply-coupon", [OrderController::class, "applyCoupon"])->name(
+        Route::post("/apply-coupon", [OrderController::class, "applyCoupon"])->middleware("throttle:10,1")->name(
             "apply-coupon",
+        );
+        Route::post("/remove-coupon", [OrderController::class, "removeCoupon"])->name(
+            "remove-coupon",
         );
         Route::get("/success/{orderNumber}", [
             OrderController::class,
             "success",
-        ])->name("success");
+        ])->middleware("throttle:20,1")->name("success");
         Route::get("/whatsapp/{orderNumber}", [
             OrderController::class,
             "whatsapp",
-        ])->name("whatsapp");
+        ])->middleware("throttle:10,1")->name("whatsapp");
 
         // Riwayat & detail order (harus login)
         Route::middleware("auth")->group(function () {
@@ -140,7 +147,7 @@ Route::middleware("auth")->group(function () {
 
     // Wishlist
     Route::get("/wishlist", [WishlistController::class, "index"])->name("wishlist.index");
-    Route::post("/wishlist/{product}", [WishlistController::class, "toggle"])->name("wishlist.toggle");
+    Route::post("/wishlist/{product}", [WishlistController::class, "toggle"])->middleware("throttle:30,1")->name("wishlist.toggle");
 
     // Notifications
     Route::get("/notifikasi", [NotificationController::class, "index"])->name("notifications.index");
@@ -159,12 +166,22 @@ Route::middleware("auth")->group(function () {
 |--------------------------------------------------------------------------
 */
 
+// Cek Order (tanpa login)
+Route::get("/cek-order", [OrderController::class, "trackForm"])->name("order.track");
+Route::post("/cek-order", [OrderController::class, "track"])->middleware("throttle:5,1")->name("order.track.submit");
+
 Route::get("/cara-pembelian", [PageController::class, "howToBuy"])->name("pages.how-to-buy");
 Route::get("/faq", [PageController::class, "faq"])->name("pages.faq");
 Route::get("/kebijakan-privasi", [PageController::class, "privacy"])->name("pages.privacy");
 Route::get("/syarat-ketentuan", [PageController::class, "terms"])->name("pages.terms");
 Route::get("/tentang-kami", [PageController::class, "about"])->name("pages.about");
 Route::get("/hubungi-kami", [PageController::class, "contact"])->name("pages.contact");
+
+// Promo / Diskon
+Route::get("/promo", [ProductController::class, "promo"])->name("products.promo");
+
+// Kategori dedicated page
+Route::get("/kategori/{category:slug}", [ProductController::class, "category"])->name("products.category");
 
 // Artikel
 Route::get("/artikel", [ArticleController::class, "index"])->name("articles.index");
@@ -409,6 +426,9 @@ Route::prefix("admin")
 
         // Digital Delivery
         Route::post("/orders/{order}/items/{item}/deliver", [AdminOrderController::class, "deliverItem"])->name("orders.deliver-item");
+
+        // Admin quick stats API (untuk notification bell & auto-refresh)
+        Route::get("/api/quick-stats", [DashboardController::class, "quickStats"])->name("api.quick-stats");
     });
 
 /*

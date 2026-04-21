@@ -24,6 +24,27 @@ if (!function_exists('setting')) {
     }
 }
 
+if (!function_exists('censor_phone')) {
+    /**
+     * Sensor nomor telepon untuk ditampilkan publik.
+     * Input: 081775093906 → Output: 0817****3906
+     * Input: 6281775093906 → Output: 6281****3906
+     */
+    function censor_phone(string $phone): string
+    {
+        $phone = preg_replace('/[^0-9]/', '', $phone);
+        $len = strlen($phone);
+
+        if ($len < 8) {
+            // Terlalu pendek, sensor sebagian
+            return substr($phone, 0, 3) . '****';
+        }
+
+        // Tampilkan 4 digit awal + **** + 4 digit akhir
+        return substr($phone, 0, 4) . '****' . substr($phone, -4);
+    }
+}
+
 if (!function_exists('format_phone_display')) {
     /**
      * Format nomor telepon untuk ditampilkan.

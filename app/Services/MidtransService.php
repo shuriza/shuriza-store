@@ -158,9 +158,9 @@ class MidtransService
             'payment_gateway_id' => $payload['transaction_id'] ?? null,
         ]);
 
-        // Map status
+        // Map status (dengan idempotency guard)
         if ($transactionStatus === 'capture' || $transactionStatus === 'settlement') {
-            if ($fraudStatus === 'accept') {
+            if ($fraudStatus === 'accept' && $order->status === 'pending') {
                 $order->update([
                     'status'  => 'processing',
                     'paid_at' => now(),
@@ -175,6 +175,7 @@ class MidtransService
                     }
                 }
             }
+            // Jika sudah processing/completed, abaikan duplikat
         } elseif (in_array($transactionStatus, ['cancel', 'deny', 'expire'])) {
             if ($order->status === 'pending') {
                 $order->update(['status' => 'cancelled']);
@@ -186,6 +187,7 @@ class MidtransService
                     }
                 }
             }
+            // Jika sudah cancelled, abaikan duplikat
         }
         // pending: do nothing, order stays pending
 

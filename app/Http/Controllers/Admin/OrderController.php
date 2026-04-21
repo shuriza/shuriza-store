@@ -315,12 +315,38 @@ class OrderController extends Controller
         // Kirim notifikasi in-app ke customer
         if ($order->user_id) {
             try {
-                \App\Models\Notification::digitalDelivery($order, $item);
+                \App\Models\Notification::digitalDelivery($order);
             } catch (\Throwable $e) {
                 report($e);
             }
         }
 
-        return back()->with('success', "Data delivery untuk \"{$item->product_name}\" berhasil dikirim.");
+        // Kirim email notifikasi delivery ke customer (termasuk guest)
+        if ($order->email) {
+            try {
+                \Illuminate\Support\Facades\Mail::to($order->email)->queue(
+                    new \App\Mail\OrderStatusUpdated($order->load('items'), $order->status)
+                );
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        // Auto-complete: jika semua item sudah dikirim, ubah status ke completed
+        $undeliveredCount = $order->items()->whereNull('delivered_at')->count();
+        if ($undeliveredCount === 0 && $order->status !== 'completed') {
+            $oldStatus = $order->status;
+            $order->update(['status' => 'completed']);
+
+            if ($order->user_id) {
+                try {
+                    \App\Models\Notification::orderStatusChanged($order, $oldStatus);
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
+        }
+
+        return back()->with('success', "Data delivery untuk \"{$item->product_name}\" berhasil dikirim." . ($undeliveredCount === 0 ? ' Semua item terkirim, order otomatis selesai.' : ''));
     }
 }

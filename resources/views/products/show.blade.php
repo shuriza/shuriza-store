@@ -2,9 +2,58 @@
 
 @section('title', $product->name)
 @section('description', $product->short_description ?? Str::limit(strip_tags($product->description), 160))
+@section('og_type', 'product')
 @if($product->image_url)
 @section('og_image', $product->image_url)
 @endif
+
+@push('jsonld')
+@php
+    $productJsonLd = [
+        '@context' => 'https://schema.org',
+        '@type' => 'Product',
+        'name' => $product->name,
+        'description' => $product->short_description ?? Str::limit(strip_tags($product->description), 300),
+        'sku' => $product->slug,
+        'brand' => ['@type' => 'Brand', 'name' => setting('store_name', 'Shuriza Store')],
+        'category' => $product->category?->name ?? 'Produk Digital',
+        'offers' => [
+            '@type' => 'Offer',
+            'url' => route('product.show', $product->slug),
+            'priceCurrency' => 'IDR',
+            'price' => $product->effective_price,
+            'availability' => $product->is_in_stock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+            'seller' => ['@type' => 'Organization', 'name' => setting('store_name', 'Shuriza Store')],
+        ],
+    ];
+    if ($product->image_url) {
+        $productJsonLd['image'] = $product->image_url;
+    }
+    if ($product->review_count > 0) {
+        $productJsonLd['aggregateRating'] = [
+            '@type' => 'AggregateRating',
+            'ratingValue' => $product->average_rating,
+            'reviewCount' => $product->review_count,
+            'bestRating' => '5',
+            'worstRating' => '1',
+        ];
+    }
+
+    $breadcrumbItems = [
+        ['@type' => 'ListItem', 'position' => 1, 'name' => 'Beranda', 'item' => route('home')],
+        ['@type' => 'ListItem', 'position' => 2, 'name' => 'Produk', 'item' => route('products.index')],
+    ];
+    if ($product->category) {
+        $breadcrumbItems[] = ['@type' => 'ListItem', 'position' => 3, 'name' => $product->category->name, 'item' => route('products.category', $product->category->slug)];
+        $breadcrumbItems[] = ['@type' => 'ListItem', 'position' => 4, 'name' => $product->name];
+    } else {
+        $breadcrumbItems[] = ['@type' => 'ListItem', 'position' => 3, 'name' => $product->name];
+    }
+    $breadcrumbJsonLd = ['@context' => 'https://schema.org', '@type' => 'BreadcrumbList', 'itemListElement' => $breadcrumbItems];
+@endphp
+<script type="application/ld+json">{!! json_encode($productJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+<script type="application/ld+json">{!! json_encode($breadcrumbJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+@endpush
 
 @push('styles')
 <style>
@@ -39,14 +88,7 @@
             <div class="lg:sticky lg:top-24">
                 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden">
                     <div class="relative aspect-square">
-                        @if($product->image_url)
-                            <img src="{{ $product->image_url }}" alt="{{ $product->name }}"
-                                 class="w-full h-full object-cover" loading="lazy">
-                        @else
-                            <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-peri/10 to-peri/5">
-                                <i class="fas fa-box-open text-7xl text-peri/40"></i>
-                            </div>
-                        @endif
+                        <x-product-image :product="$product" />
 
                         @if($product->badge)
                             <span class="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide text-white
@@ -225,6 +267,7 @@
         </div>
 
         {{-- Reviews Section --}}
+        @if(setting('review_enabled', '1') === '1')
         <div class="mt-12" id="reviews">
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 sm:p-8">
                 <div class="flex items-center justify-between mb-6">
@@ -292,15 +335,15 @@
                 {{-- Reviews List --}}
                 @if($reviews->count() > 0)
                     <div class="space-y-4">
-                        @foreach($reviews as $review)
+                         @foreach($reviews as $review)
                             <div class="rounded-xl border border-gray-100 dark:border-white/5 p-4">
                                 <div class="flex items-start justify-between gap-3">
                                     <div class="flex items-center gap-3">
                                         <div class="w-9 h-9 rounded-full bg-peri/10 flex items-center justify-center text-peri text-sm font-bold">
-                                            {{ strtoupper(substr($review->user->name, 0, 1)) }}
+                                            {{ $review->reviewer_initial }}
                                         </div>
                                         <div>
-                                            <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ $review->user->name }}</span>
+                                            <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ $review->reviewer_display_name }}</span>
                                             <div class="flex items-center gap-1 mt-0.5">
                                                 @for($i = 1; $i <= 5; $i++)
                                                     <i class="fas fa-star text-[10px] {{ $i <= $review->rating ? 'text-amber-400' : 'text-gray-300 dark:text-gray-600' }}"></i>
@@ -325,6 +368,7 @@
                 @endif
             </div>
         </div>
+        @endif
 
         {{-- Related Products --}}
         @if($related->count())

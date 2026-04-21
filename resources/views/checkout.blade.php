@@ -172,6 +172,10 @@
                                             <span class="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{{ $coupon->code }}</span>
                                             <span class="text-xs text-emerald-600 dark:text-emerald-500">({{ $coupon->formatted_value }})</span>
                                         </div>
+                                        <button type="button" onclick="document.getElementById('removeCouponForm').submit()"
+                                                class="w-6 h-6 rounded-full hover:bg-red-100 dark:hover:bg-red-500/20 text-gray-400 hover:text-red-500 flex items-center justify-center transition" title="Hapus kupon">
+                                            <i class="fas fa-times text-xs"></i>
+                                        </button>
                                     </div>
                                 @else
                                     <div class="coupon-input" x-data="{ code: '' }">
@@ -248,5 +252,9 @@
 <form id="couponForm" action="{{ route('order.apply-coupon') }}" method="POST" class="hidden">
     @csrf
     <input type="hidden" name="coupon_code" id="coupon_code_input" value="">
+</form>
+{{-- Hidden remove coupon form --}}
+<form id="removeCouponForm" action="{{ route('order.remove-coupon') }}" method="POST" class="hidden">
+    @csrf
 </form>
 @endsection

@@ -47,6 +47,31 @@ return Application::configure(basePath: dirname(__DIR__))
                     'message' => 'Kamu tidak memiliki izin untuk mengakses halaman ini.',
                 ], 403);
             }
+
+            if ($e->getStatusCode() === 429) {
+                if ($request->expectsJson()) {
+                    return response()->json(['message' => 'Terlalu banyak permintaan. Coba lagi nanti.'], 429);
+                }
+                return response()->view('error-page', [
+                    'code' => 429,
+                    'title' => 'Terlalu Banyak Permintaan',
+                    'message' => 'Kamu terlalu sering melakukan aksi ini. Silakan tunggu beberapa saat.',
+                ], 429);
+            }
+        });
+
+        // 500 error handler (production only)
+        $exceptions->render(function (\Throwable $e, $request) {
+            if (!app()->hasDebugModeEnabled() && !$request->expectsJson()) {
+                $statusCode = method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500;
+                if ($statusCode >= 500) {
+                    return response()->view('error-page', [
+                        'code' => 500,
+                        'title' => 'Terjadi Kesalahan',
+                        'message' => 'Maaf, terjadi kesalahan pada server. Silakan coba lagi nanti.',
+                    ], 500);
+                }
+            }
         });
     })
     ->create();

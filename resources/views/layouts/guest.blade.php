@@ -47,6 +47,10 @@
             <div class="w-full sm:max-w-md mt-6 px-6 py-6 bg-white dark:bg-gray-800 shadow-sm dark:shadow-none border border-gray-200 dark:border-gray-700 overflow-hidden rounded-2xl">
                 {{ $slot }}
             </div>
+
+            <a href="{{ url('/') }}" class="mt-4 text-sm text-gray-500 dark:text-gray-400 hover:text-peri transition-colors flex items-center gap-1.5">
+                <i class="fas fa-arrow-left text-xs"></i> Kembali ke Toko
+            </a>
         </div>
     </body>
 </html>

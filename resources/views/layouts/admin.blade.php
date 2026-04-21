@@ -177,11 +177,81 @@
                     <span>Ke Toko</span>
                 </a>
 
-                {{-- Notification bell placeholder --}}
-                <button class="relative flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 transition hover:bg-white/5 hover:text-white">
-                    <i class="fas fa-bell"></i>
-                    <span class="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-peri"></span>
-                </button>
+                {{-- Admin Notification Bell --}}
+                <div x-data="adminNotif()" x-init="fetch()" class="relative">
+                    <button @click="open = !open" class="relative flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 transition hover:bg-white/5 hover:text-white">
+                        <i class="fas fa-bell"></i>
+                        <span x-show="pendingOrders > 0" x-cloak
+                              class="absolute -right-0.5 -top-0.5 min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center px-1"
+                              x-text="pendingOrders"></span>
+                    </button>
+                    <div x-show="open" x-cloak @click.outside="open = false" x-transition
+                         class="absolute right-0 mt-2 w-72 rounded-xl border border-gray-800 bg-gray-900 shadow-xl overflow-hidden z-50">
+                        <div class="border-b border-gray-800 px-4 py-3">
+                            <p class="text-sm font-bold text-white">Notifikasi Admin</p>
+                        </div>
+                        <div class="divide-y divide-gray-800/50 max-h-64 overflow-y-auto">
+                            <a href="{{ route('admin.orders.index', ['status' => 'pending']) }}"
+                               class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition">
+                                <div class="w-8 h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center shrink-0">
+                                    <i class="fas fa-clock text-yellow-400 text-xs"></i>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-sm text-white font-medium"><span x-text="pendingOrders">0</span> pesanan pending</p>
+                                    <p class="text-xs text-gray-500">Menunggu diproses</p>
+                                </div>
+                            </a>
+                            <a href="{{ route('admin.orders.index') }}"
+                               class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition">
+                                <div class="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center shrink-0">
+                                    <i class="fas fa-shopping-cart text-green-400 text-xs"></i>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-sm text-white font-medium"><span x-text="todayOrders">0</span> pesanan hari ini</p>
+                                    <p class="text-xs text-gray-500">Rp <span x-text="todayRevenue">0</span></p>
+                                </div>
+                            </a>
+                            <a href="{{ route('admin.stock-alerts.index') }}"
+                               class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition"
+                               x-show="lowStock > 0 || outOfStock > 0">
+                                <div class="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
+                                    <i class="fas fa-exclamation-triangle text-amber-400 text-xs"></i>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-sm text-white font-medium"><span x-text="lowStock">0</span> stok menipis</p>
+                                    <p class="text-xs text-gray-500" x-show="outOfStock > 0"><span x-text="outOfStock">0</span> habis stok</p>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <script>
+                function adminNotif() {
+                    return {
+                        open: false,
+                        pendingOrders: 0,
+                        todayOrders: 0,
+                        todayRevenue: '0',
+                        lowStock: 0,
+                        outOfStock: 0,
+                        async fetch() {
+                            try {
+                                const res = await window.fetch('{{ route("admin.api.quick-stats") }}', {
+                                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }
+                                });
+                                const d = await res.json();
+                                this.pendingOrders = d.pending_orders ?? 0;
+                                this.todayOrders = d.today_orders ?? 0;
+                                this.todayRevenue = new Intl.NumberFormat('id-ID').format(d.today_revenue ?? 0);
+                                this.lowStock = d.low_stock ?? 0;
+                                this.outOfStock = d.out_of_stock ?? 0;
+                            } catch(e) {}
+                            // Auto-refresh setiap 60 detik
+                            setTimeout(() => this.fetch(), 60000);
+                        }
+                    };
+                }
+                </script>
 
                 {{-- User dropdown --}}
                 <div class="relative" x-data @click.away="userDropdown = false">

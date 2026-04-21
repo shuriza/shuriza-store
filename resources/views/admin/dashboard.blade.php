@@ -271,7 +271,7 @@
                         <p class="truncate text-sm font-semibold text-white">{{ $product->name }}</p>
                         <p class="text-xs text-gray-500">{{ $product->category?->name ?? '-' }}</p>
                     </div>
-                    <span class="flex-shrink-0 rounded-fullpx-2.5 py-0.5 text-xs font-bold {{ $product->stock === 0 ? 'bg-red-500/15 text-red-400' : 'bg-amber-400/15 text-amber-400' }}">
+                    <span class="flex-shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold {{ $product->stock === 0 ? 'bg-red-500/15 text-red-400' : 'bg-amber-400/15 text-amber-400' }}">
                         {{ $product->stock }} stok
                     </span>
                 </div>
